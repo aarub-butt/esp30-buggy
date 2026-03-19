@@ -11,8 +11,7 @@ class MotorDriveBoard{
         static const float wheel_track_length;
                 
         // Timer variables
-        int previous_time;
-        int current_time;
+        BuggyConfig::diff_time times;
 
         class Motor{
             private:
@@ -21,7 +20,7 @@ class MotorDriveBoard{
                 // encoder variables
                 int previous_pulse_count;
                 int current_pulse_count;
-                int distance_travelled;
+                float distance_travelled;
 
                 // motor variables
                 float speed;
@@ -38,6 +37,9 @@ class MotorDriveBoard{
                 QEI encoder;
 
                 void resetEncoder();
+                void calcSpeed(int *time_elapsed);
+                void calcDistanceTravelled();
+
                 
                 Motor(BuggyConfig::MotorPins motor_pins);                
         };
@@ -59,8 +61,8 @@ class MotorDriveBoard{
         void getPWM(float* PWMs);
 
         void getSpeed(float* speeds);
-        void calcSpeed(Timer* timer_us);
+        void calcSpeed(FSM* fsm);
 
-        void getCurrentEncoder(int* enocder_values);
+        void getPulseCounts(int* enocder_values);
         void resetEncoders();
 };

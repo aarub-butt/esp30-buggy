@@ -4,7 +4,7 @@
 
 const float  MotorDriveBoard::wheel_track_length = 0.22;
 const float MotorDriveBoard::Motor::wheel_circumference = 3.14 * 0.0779;
-const int MotorDriveBoard::Motor::pulses_per_revolution = 1000;
+const int MotorDriveBoard::Motor::pulses_per_revolution = 512;
                         
 
 // Motor Methods
@@ -15,6 +15,14 @@ void MotorDriveBoard::Motor::resetEncoder(){
     encoder.reset();
 }
 
+void MotorDriveBoard::Motor::calcDistanceTravelled(){
+    distance_travelled = wheel_circumference * (((float) current_pulse_count - previous_pulse_count)/pulses_per_revolution);
+}
+
+void MotorDriveBoard::Motor::calcSpeed(int *time_elapsed){
+    calcDistanceTravelled();
+    speed = (distance_travelled) / ( ( (long) *time_elapsed )/1000000.0f);
+}
 
 // MotorDriveBoard Methods
 
@@ -58,18 +66,15 @@ void MotorDriveBoard::getSpeed(float* speeds){
     speeds[1] = right_motor.speed;
 }
 
-void MotorDriveBoard::calcSpeed(Timer* timer_us){
+void MotorDriveBoard::calcSpeed(FSM *fsm){
 
     left_motor.current_pulse_count = left_motor.encoder.getPulses();   
     right_motor.current_pulse_count = right_motor.encoder.getPulses();    
- 
-    current_time = timer_us->elapsed_time().count();
-    int difference_time = current_time - previous_time;
-
     
+    int time_elapsed = getTimeElapsed_us(fsm, &times);
+    left_motor.calcSpeed(&time_elapsed);
+    right_motor.calcSpeed(&time_elapsed);
 
-
-    previous_time = current_time;
     left_motor.previous_pulse_count = left_motor.current_pulse_count;
     right_motor.previous_pulse_count = right_motor.current_pulse_count;
 }
@@ -77,6 +82,11 @@ void MotorDriveBoard::calcSpeed(Timer* timer_us){
 void MotorDriveBoard::resetEncoders(){
     left_motor.resetEncoder();
     right_motor.resetEncoder();
+}
+
+void MotorDriveBoard::getPulseCounts(int* pulse_counts){
+    pulse_counts[0] = left_motor.current_pulse_count;
+    pulse_counts[1] = right_motor.current_pulse_count;
 }
 
 // Constructors
@@ -88,8 +98,6 @@ MotorDriveBoard::MotorDriveBoard(BuggyConfig::MotorPins left_motor_pins, BuggyCo
     setIsBipolar(true);
     set_PWM_frequency(PWM_frequency);
     setPWM(0.5f,0.5f);
-
-    previous_time = 0;
 }
 
 MotorDriveBoard::Motor::Motor(BuggyConfig::MotorPins motor_pins) :
