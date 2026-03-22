@@ -1,16 +1,5 @@
 #include "BuggyConfig.hpp"
 
-BuggyConfig::MotorPins BuggyConfig::left_motor_pins = 
-{PC_4,PA_9 ,PB_15,PB_1};
-BuggyConfig::MotorPins BuggyConfig::right_motor_pins = 
-{PB_5,PA_8 ,PB_14,PB_13};
-
-BuggyConfig::SensorPins BuggyConfig::sensor_pins = 
-{A0,A1,A2,A3,A4,A5};
-BuggyConfig::SensorWeights BuggyConfig::sensor_weights =
-{0.1f,0.2f,0.3f,0.4f,0.5f,0.6f}; 
-
-
 // FSM Methods / constructor
 
 Timer FSM::global_timer;
@@ -20,8 +9,8 @@ void FSM::InitiateCycle(){
 }
 
 FSM::FSM(){
-    programState = BuggyConfig::STATE_MENU;
-    previousProgramState = BuggyConfig::STATE_NONE;
+    programState = STATE_NONE;
+    previousProgramState = STATE_NONE;
     buggy_rate.attach(callback(this,&FSM::InitiateCycle),buggy_period);
     var_isNextCycle = false;
 
@@ -48,7 +37,7 @@ bool FSM::isNotRepeatState(){
     }
 }
 
-void FSM::nextState(BuggyConfig::ProgramState nextState){
+void FSM::nextState(ProgramState nextState){
     previousProgramState = programState;
     programState = nextState;
 }
@@ -58,8 +47,12 @@ void FSM::start_timestamp(){
     cycle_timestamp.previous_time = cycle_timestamp.current_time;
 }
 
-BuggyConfig::ProgramState FSM::getProgramState(){
+ProgramState FSM::getProgramState(){
     return programState;
+}
+
+ProgramState FSM::getPreviousProgramState(){
+    return previousProgramState;
 }
 
 bool FSM::shouldPrint(){
@@ -74,14 +67,14 @@ bool FSM::shouldPrint(){
 
 // diff time 
 
-BuggyConfig::diff_time::diff_time(){
+diff_time::diff_time(){
     previous_time = 0;
     current_time = 0;
 }
 
-int getTimeElapsed_us(FSM *fsm, BuggyConfig::diff_time *times){
+int getTimeElapsed_us(long long current_time, diff_time *times){
     
-    times->current_time = fsm->global_timer.elapsed_time().count();
+    times->current_time = current_time;
     int time_elapsed = times->current_time - times->previous_time;
     times->previous_time = times->current_time;
 
@@ -93,7 +86,6 @@ int getTimeElapsed_us(FSM *fsm, BuggyConfig::diff_time *times){
 void FSM::BLE_COMMAND::clear(){
     memset((char*) command,0,64);
     value = 0;
-    cmd = CMD_INVALID;
 }
 
 FSM::BLE_COMMAND::BLE_COMMAND(){

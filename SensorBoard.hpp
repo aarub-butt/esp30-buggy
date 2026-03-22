@@ -4,19 +4,28 @@
 #include "BuggyConfig.hpp"
 
 class SensorBoard{
+    
     private:
-        struct LineSensor{
-            AnalogIn input;
-            float weight;
+        class LineSensor{
+            public: 
+                AnalogIn input;
+                float weight;
 
-            LineSensor(PinName pin, float w) : input(pin), weight(w){}
+                static float alpha;
+
+                float current_sensor_value;
+                float previous_sensor_value;
+                
+
+                float read();
+                LineSensor(PinName pin, float w);
         };
         
         LineSensor sensors[6];
+    
     public:
-        SensorBoard(BuggyConfig::SensorPins sensor_pins, BuggyConfig::SensorWeights sensor_weights);
+        SensorBoard(SensorConfig sensor_config);
 
         void readSensorValues(float* sensorValues);
         float getLinePosition();
-
 };

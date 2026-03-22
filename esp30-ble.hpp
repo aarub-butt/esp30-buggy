@@ -2,6 +2,7 @@
 
 #include <mbed.h>
 #include "BuggyConfig.hpp"
+#include "MotorDriveBoard.hpp"
 #include <cstring>
 
 class ble{
@@ -13,17 +14,16 @@ class ble{
         int command_buffer_index;
         char command_buffer[command_buffer_size];
 
-        bool readCommand(FSM::BLE_COMMAND *command_ptr);
         void clear_command_buffer();
 
-        void ParseCommand(FSM::BLE_COMMAND *command_ptr);
+        void ParseCommand(FSM* fsm, FSM::BLE_COMMAND *command_ptr, MotorDriveBoard* mdb);
 
     public:
         BufferedSerial pc;
 
         ble(PinName tx, PinName rx, int baudrate);
         void sendTelemetry(char* telemetry);
-        void sendTelemetry(char* telemetry, FSM *fsm);
-        bool getCommand(FSM::BLE_COMMAND *command_ptr);
+        void sendTelemetry(char* telemetry, long long current_time, diff_time* cycle_timestamp);
+        bool getCommand(FSM* fsm, FSM::BLE_COMMAND *command_ptr, MotorDriveBoard* mdb);
 }; 
 

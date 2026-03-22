@@ -9,81 +9,81 @@ void ble::clear_command_buffer(){
     command_buffer_index = 0;
 }
 
-bool ble::readCommand(FSM::BLE_COMMAND *command_ptr){
-         
-    char c;
-    bool found_command = false;
-
-    while (pc.readable() == true){
-
-        pc.read(&c, 1);
-
-        if (command_buffer_index >= command_buffer_size){
-            clear_command_buffer();
-        }
-        
-        if (c == '\r' || c == '\n'){
-            
-            if (command_buffer_index > 0){
-                command_buffer[command_buffer_index]= '\0';
-                strcpy(command_ptr->command, command_buffer);
-                found_command = true;
-                ParseCommand(command_ptr);
-                clear_command_buffer();   
-                break;
-            }
-
-        }else{
-            command_buffer[command_buffer_index] = c;
-            command_buffer_index++;
-        }
-
-    }
-
-    return found_command;
-}
-
-void ble::ParseCommand(FSM::BLE_COMMAND *command_ptr){
+void ble::ParseCommand(FSM* fsm, FSM::BLE_COMMAND *command_ptr, MotorDriveBoard* mdb){
     
-    if (strcmp(command_ptr->command,"menu") == 0){
-        command_ptr->cmd = FSM::BLE_COMMAND::CMD_MENU;
+    if (strcmp(command_ptr->command,"none") == 0){
+        fsm->nextState(STATE_NONE);
     }
     
-    else if(strcmp(command_ptr->command,"test") == 0){
-        command_ptr->cmd = FSM::BLE_COMMAND::CMD_TEST;
+    else if(sscanf(command_ptr->command, "rotate=%f", &command_ptr->value) == 1){
+        fsm->nextState(STATE_ROTATE);
     }
     
     else if(strcmp(command_ptr->command,"encoder") == 0){
-        command_ptr->cmd = FSM::BLE_COMMAND::CMD_ENCODER;
+        fsm->nextState(STATE_ENCODER);
     }
 
     else if(strcmp(command_ptr->command,"sensor") == 0){
-        command_ptr->cmd = FSM::BLE_COMMAND::CMD_SENSOR;
+        fsm->nextState(STATE_SENSOR);
     }
 
     else if(strcmp(command_ptr->command,"enable") == 0){
-        command_ptr->cmd = FSM::BLE_COMMAND::CMD_ENABLE;
+        mdb->setEnable(!mdb->getEnable());
     }
 
     else if (sscanf(command_ptr->command, "lpwm=%f", &command_ptr->value) == 1) {
-        command_ptr->cmd = FSM::BLE_COMMAND::CMD_SET_LEFT_PWM;
+        float PWMs[2];
+        mdb->getPWM(PWMs);
+        mdb->setPWM(command_ptr->value, PWMs[1]);
     }
 
     else if (sscanf(command_ptr->command, "rpwm=%f", &command_ptr->value) == 1) {
-        command_ptr->cmd = FSM::BLE_COMMAND::CMD_SET_RIGHT_PWM;
+        float PWMs[2];
+        mdb->getPWM(PWMs);
+        mdb->setPWM(PWMs[0],command_ptr->value);
     }
 
-    else{
-        command_ptr->clear();
+    else if(strcmp(command_ptr->command,"display") == 0){
+        fsm->nextState(STATE_DISPLAY);
     }
 
 }
 
-bool ble::getCommand(FSM::BLE_COMMAND *command_ptr){
+bool ble::getCommand(FSM* fsm, FSM::BLE_COMMAND *command_ptr, MotorDriveBoard* mdb){
     
     if (pc.readable()){
-        return readCommand(command_ptr);
+        char c;
+        bool found_command = false;
+
+        while (pc.readable() == true){
+
+            pc.read(&c, 1);
+
+            if (command_buffer_index >= command_buffer_size){
+                clear_command_buffer();
+            }
+            
+            if (c == '\r' || c == '\n'){
+                
+                if (command_buffer_index > 0){
+                    command_buffer[command_buffer_index]= '\0';
+                    strcpy(command_ptr->command, command_buffer);
+                    found_command = true;
+                    ParseCommand(fsm, command_ptr, mdb);
+                    clear_command_buffer();   
+                    break;
+                }
+
+            }else{
+                command_buffer[command_buffer_index] = c;
+                command_buffer_index++;
+            }
+
+        }
+
+        return found_command;
     }
+
     return false;
 }
 
@@ -91,10 +91,10 @@ void ble::sendTelemetry(char* telemetry){
     pc.write(telemetry,strlen(telemetry));
 }
 
-void ble::sendTelemetry(char* telemetry, FSM* fsm){
+void ble::sendTelemetry(char* telemetry, long long current_time, diff_time* cycle_timestamp){
     pc.write(telemetry,strlen(telemetry));
     
-    int time_elapsed = getTimeElapsed_us(fsm, &fsm->cycle_timestamp);
+    int time_elapsed = getTimeElapsed_us(current_time, cycle_timestamp);
     snprintf(telemetry,32,"\r\n%d\r\n", time_elapsed);
     pc.write(telemetry, strlen(telemetry));
 }

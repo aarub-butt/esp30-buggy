@@ -10,75 +10,78 @@
 #include "esp30-ble.hpp"
 #include "reading-sensors.hpp"
 
+const float  MotorDriveBoard::wheel_track_length = 0.22;
+const float MotorDriveBoard::Motor::wheel_circumference = 3.14 * 0.0779;
+const int MotorDriveBoard::Motor::pulses_per_revolution = 512;
+
+float SensorBoard::LineSensor::alpha = 0.7;
+float MotorDriveBoard::alpha = 0.7;
+
+MotorDriveBoard::PID_controller MotorDriveBoard::steering_pid(1,0,0,1);
+float MotorDriveBoard::dynamic_speed_constant = 1;
+float MotorDriveBoard::max_speed = 1;
+
+MotorConfig left_motor_config = 
+{PC_4,PA_9 
+,PB_15,PB_1 
+,1,0,0,0.5};
+
+MotorConfig right_motor_config = 
+{PB_5,PA_8 
+,PB_14,PB_13
+,1,0,0,0.5};
+
+SensorConfig sensor_config = 
+{{
+{A0,0.1f}
+,{A1,0.2f}
+,{A2,0.3f}
+,{A3,0.4f}
+,{A4,0.5f}
+,{A5,0.6f}
+}};
+
+
 
 int main()
 {
 
     ble pc(PA_11,PA_12,9600);
-    MotorDriveBoard mdb(BuggyConfig::left_motor_pins,BuggyConfig::right_motor_pins, PB_4,20000);
+    MotorDriveBoard mdb(left_motor_config,right_motor_config, PB_4,20000);
     FSM fsm;
-    SensorBoard sb(BuggyConfig::sensor_pins, BuggyConfig::sensor_weights);
+    SensorBoard sb(sensor_config);
 
 
     while (true){
 
         if (fsm.isNextCycle()){
             fsm.start_timestamp();
-
+            fsm.ble_command.clear();
+            pc.getCommand(&fsm, &fsm.ble_command, &mdb);
+            
             switch (fsm.getProgramState()){
                 
-                case (BuggyConfig::STATE_MENU): {
-                    if (pc.getCommand(&fsm.ble_command)){
-                        switch (fsm.ble_command.cmd){
-                            
-                            case (FSM::BLE_COMMAND::CMD_ENCODER):
-                                fsm.nextState(BuggyConfig::STATE_ENCODER);
-                                break;
-                            
-                            case (FSM::BLE_COMMAND::CMD_TEST):
-                                fsm.nextState(BuggyConfig::STATE_TEST);
-                                break;
-                            
-                            case (FSM::BLE_COMMAND::CMD_SENSOR):
-                                fsm.nextState(BuggyConfig::STATE_SENSOR);
-                                break;
-
-                            default:
-                                break;
-                        }
-                    }
+                case (STATE_STOP): {
+                    mdb.setEnable(false);
+                    mdb.setPWM(0.5,0.5);
                 }
                 break;
-                
-                case (BuggyConfig::STATE_ENCODER):
+
+                case (STATE_NONE) : {
+                    break;
+                }
+
+                case (STATE_ENCODER):
                     ReadingEncoder(&pc,&mdb,&fsm);
                     break;
-
-                case (BuggyConfig::STATE_TEST):
-                    TestParts(&pc,&mdb,&fsm);
-                    break;
                 
-                case (BuggyConfig::STATE_SENSOR):
+                case (STATE_SENSOR):
                     ReadingSensors(&sb,&pc,&fsm);
                     break;
 
-                default:
-                    break;
+            
             }
-
-
         }
-
-
-/*
-        if (pc.getCommand(ble_command)){
-            pc.sendTelemetry(ble_command);
-            char timer_buffer[32];
-            snprintf(timer_buffer,20,"%lld", global_timer.elapsed_time().count());
-            pc.sendTelemetry(timer_buffer);
-       }
-
-       */
    
     }
 
