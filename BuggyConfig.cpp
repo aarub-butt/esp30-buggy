@@ -16,7 +16,11 @@ FSM::FSM(){
 
     global_timer.start();
     var_shouldPrint = 1;
-    send_telemetry = 0;
+    should_send_telemetry = false;
+}
+
+void FSM::toggleTelemetry(){
+    should_send_telemetry = !should_send_telemetry;
 }
 
 bool FSM::isNextCycle(){
@@ -34,6 +38,7 @@ bool FSM::isNotRepeatState(){
     if (programState == previousProgramState){
         return false;
     }else{
+        previousProgramState = programState;
         return true;
     }
 }
@@ -59,7 +64,7 @@ ProgramState FSM::getPreviousProgramState(){
 }
 
 bool FSM::shouldPrint(){
-    if (var_shouldPrint == 100){
+    if (var_shouldPrint == 20 && should_send_telemetry == true){
         var_shouldPrint = 1;
         return true;
     }else{

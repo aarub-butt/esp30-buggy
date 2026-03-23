@@ -10,11 +10,8 @@ void ReadingSensors(SensorBoard* sensor_board, ble* pc, FSM *fsm){
     if (fsm->shouldPrint()){
         float line_sensor_outputs[6];
         sensor_board->readSensorValues(line_sensor_outputs);
-
         char line_sensor_outputs_string[telemetry_size];
-        int int_line_sensor_outputs[6];
  
-
         snprintf(line_sensor_outputs_string,telemetry_size,
         "s:%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\r\n"
         ,line_sensor_outputs[0],line_sensor_outputs[1],line_sensor_outputs[2],
@@ -23,7 +20,6 @@ void ReadingSensors(SensorBoard* sensor_board, ble* pc, FSM *fsm){
         pc->sendTelemetry(line_sensor_outputs_string, fsm->global_timer.elapsed_time().count(), &fsm->cycle_timestamp);
     }
 
-    fsm->nextState(fsm->getProgramState());
 }
 
 void ReadingEncoder(ble* pc, MotorDriveBoard* mdb, FSM *fsm){
@@ -51,6 +47,5 @@ void ReadingEncoder(ble* pc, MotorDriveBoard* mdb, FSM *fsm){
         pc->sendTelemetry(telemetry, fsm->global_timer.elapsed_time().count(), &fsm->cycle_timestamp);
     }
 
-    fsm->nextState(fsm->getProgramState());
 }
 

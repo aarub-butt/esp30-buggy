@@ -47,6 +47,7 @@ class MotorDriveBoard{
                 // motor variables
                 float speed;
                 float previous_speed;
+                float speed_error;
                 float RPM;
                 float PWM_duty;
 
@@ -74,6 +75,11 @@ class MotorDriveBoard{
         void updateEncoder();
         void updateSpeeds(float dt);
 
+        int _target_pulse_count;
+        int _rotation_stage;
+        bool rotate(float dt);
+        static PID_controller rotation_pid;
+
     public:
 
         Motor left_motor;
@@ -94,8 +100,11 @@ class MotorDriveBoard{
         void resetEncoders();
 
         void SetPwmFromTargetSpeed(float dt, float lt, float rt);
-        void updateLineFollower(float error, long long current_time);
+        void updateLineFollower(float error, float dt);
 
-        void rotate(float degrees);
-        void updateRotate();
+        bool _is_rotating;
+        void startRotate(float degree);
+        bool updateRotate(float dt);
+
+        bool stop(float dt);
 };

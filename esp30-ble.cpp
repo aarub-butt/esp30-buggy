@@ -22,6 +22,7 @@ void ble::ParseCommand(FSM* fsm, FSM::BLE_COMMAND *command_ptr, MotorDriveBoard*
     }
     
     else if(sscanf(command_ptr->command, "rotate=%f", &command_ptr->value) == 1){
+        fsm->return_state = fsm->getPreviousProgramState();
         fsm->nextState(STATE_ROTATE);
     }
     
@@ -54,7 +55,7 @@ void ble::ParseCommand(FSM* fsm, FSM::BLE_COMMAND *command_ptr, MotorDriveBoard*
     }
 
     else if(strcmp(command_ptr->command,"tel") == 0){
-        fsm->send_telemetry = !fsm->send_telemetry; 
+        fsm->toggleTelemetry();
     }
 
     else if(strcmp(command_ptr->command,"display") == 0){
@@ -122,6 +123,7 @@ void ble::sendTelemetry(char* telemetry, long long current_time, diff_time* cycl
     snprintf(telemetry,telemetry_size,"%d\r\n", dt);
     pc.write(telemetry, strlen(telemetry));
 }
+
 
 // Constructor 
 

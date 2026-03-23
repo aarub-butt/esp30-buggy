@@ -45,7 +45,6 @@ bool SensorBoard::getLinePosition(float* line_error, long long current_time){
     }
 }
 
-
 void SensorBoard::calibrate(){
     for (int i = 0; i < 6; i++){
         float sensor_value = sensors[i].readRaw();

@@ -55,18 +55,19 @@ class FSM{
         Ticker buggy_rate;
         void InitiateCycle();
         bool var_isNextCycle;
-        int send_telemetry_cycle_time;
+        int var_shouldPrint; 
+        bool should_send_telemetry;
 
-        int var_shouldPrint;        
     public:
         FSM();
         bool isNextCycle();
         static Timer global_timer;
         diff_time cycle_timestamp;
 
-        bool send_telemetry;
+        ProgramState return_state;
 
         bool shouldPrint();
+        void toggleTelemetry();
         void start_timestamp();
 
         bool isNotRepeatState();

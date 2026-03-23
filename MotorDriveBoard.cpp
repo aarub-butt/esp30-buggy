@@ -11,6 +11,11 @@ float MotorDriveBoard::PID_controller::calculate(float error, float dt){
     float P = kp * error;
 
     integral += error *dt;
+    if (ki != 0){
+        float max_I = output_limit / ki;
+        if (integral > max_I) integral = max_I;
+        if (integral < -max_I) integral = -max_I;
+    }
     float I = ki*integral;
 
     float derivative = (error-previous_error)/dt;
@@ -55,7 +60,6 @@ bool MotorDriveBoard::getEnable(){
     return enable;
 }
 
-
 void MotorDriveBoard::setPWM(float left, float right){
     // mirror variables
     left_motor.PWM_duty = left;
@@ -98,15 +102,15 @@ void MotorDriveBoard::getPulseCounts(int* pulse_counts){
 void MotorDriveBoard::SetPwmFromTargetSpeed(float dt, float lt, float rt){
     updateSpeeds(dt);
 
-    float left_pwm = 0.5f + left_motor.speed_pid.calculate(lt - left_motor.speed, dt);
-    float right_pwm = 0.5f + right_motor.speed_pid.calculate(rt- right_motor.speed, dt);
+    left_motor.speed_error = lt - left_motor.speed;
+    right_motor.speed_error = rt- right_motor.speed;
+    
+    float left_pwm = 0.5f + left_motor.speed_pid.calculate(left_motor.speed_error, dt);
+    float right_pwm = 0.5f + right_motor.speed_pid.calculate(right_motor.speed_error, dt);
 
     setPWM(left_pwm, right_pwm);
 }
-void MotorDriveBoard::updateLineFollower(float error, long long current_time){
-    float dt;
-    getTimeElapsed(current_time, &times, &dt);
-
+void MotorDriveBoard::updateLineFollower(float error, float dt){
     float steering_output = steering_pid.calculate(error, dt);
     
     float base_speed = max_speed - (abs(error) * dynamic_speed_constant);
@@ -114,10 +118,65 @@ void MotorDriveBoard::updateLineFollower(float error, long long current_time){
     float target_left_speed = base_speed + steering_output;
     float target_right_speed = base_speed - steering_output;
 
+
+
     SetPwmFromTargetSpeed(dt, target_left_speed, target_right_speed);
+
 }
 
+bool MotorDriveBoard::stop(float dt){
+    if (abs(left_motor.speed) > 0.05f || abs(right_motor.speed) > 0.05f){
+        SetPwmFromTargetSpeed(dt, 0.0f, 0.0f);
+        return false;
+    }
+    return true;
+}
 
+void MotorDriveBoard::startRotate(float degree){
+    _target_pulse_count = ((wheel_track_length/2)*((3.1415f/180)*degree))*(Motor::pulses_per_revolution/Motor::wheel_circumference);
+    _rotation_stage = 0;
+    _is_rotating = true;
+}
+bool MotorDriveBoard::updateRotate(float dt){
+    if (_is_rotating != true){
+        return true;
+    }
+
+    switch(_rotation_stage){
+        case (0):
+            if (stop(dt)){
+                resetEncoders();
+                _rotation_stage = 1;
+            }
+            break;
+        
+        case (1):
+            if (rotate(dt)){
+                _rotation_stage = 2;
+            }
+            break;
+
+        case (2): 
+            if (stop(dt)){
+                _is_rotating = false;
+                return true;
+            }
+            break;
+    }
+    return false;
+}
+bool MotorDriveBoard::rotate(float dt){
+    
+    int error = _target_pulse_count - ((left_motor.current_pulse_count - right_motor.current_pulse_count) /2);
+    if (abs(error) < 10){
+        return true;
+    }
+
+    float output = rotation_pid.calculate(error, dt);
+    SetPwmFromTargetSpeed(dt, output, -output);
+
+    return false;
+}
 
 // Constructors
 
