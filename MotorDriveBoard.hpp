@@ -16,8 +16,9 @@ class MotorDriveBoard{
                 float integral;
 
                 void reset();
+                void setPid(float p , float i , float d);
 
-                float calculate(float error, int dt);
+                float calculate(float error, float dt);
 
                 PID_controller(float p,float i,float d, float lim);
         };
@@ -29,7 +30,6 @@ class MotorDriveBoard{
         static const float wheel_track_length;
         static float alpha;
         static float max_speed;
-
 
         // Timer variables
 
@@ -61,7 +61,7 @@ class MotorDriveBoard{
                 QEI encoder;
 
                 void resetEncoder();
-                void calcSpeed(int time_elapsed);
+                void calcSpeed(float time_elapsed);
                 void calcDistanceTravelled();
 
                 void setSpeed(float error);
@@ -69,13 +69,15 @@ class MotorDriveBoard{
                 Motor(MotorConfig motor_config);                
         };
 
-        Motor left_motor;
-        Motor right_motor;
+
 
         void updateEncoder();
-        void updateSpeeds(int dt);
+        void updateSpeeds(float dt);
 
     public:
+
+        Motor left_motor;
+        Motor right_motor;
         diff_time times;
 
         static PID_controller steering_pid;
@@ -87,9 +89,13 @@ class MotorDriveBoard{
         bool getEnable();
         void setPWM(float left, float right);
         void getPWM(float* PWMs);
-        void getSpeeds(int dt, float* speeds);
+        void getSpeeds(float dt, float* speeds);
         void getPulseCounts(int* enocder_values);
         void resetEncoders();
 
+        void SetPwmFromTargetSpeed(float dt, float lt, float rt);
         void updateLineFollower(float error, long long current_time);
+
+        void rotate(float degrees);
+        void updateRotate();
 };

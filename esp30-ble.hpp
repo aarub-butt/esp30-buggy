@@ -8,7 +8,7 @@
 class ble{
     private:
     
-        static constexpr int command_buffer_size = sizeof(char[32]);
+        static constexpr int command_buffer_size = sizeof(char[telemetry_size]);
 
         // command
         int command_buffer_index;

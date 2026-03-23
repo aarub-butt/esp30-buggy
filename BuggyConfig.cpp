@@ -16,6 +16,7 @@ FSM::FSM(){
 
     global_timer.start();
     var_shouldPrint = 1;
+    send_telemetry = 0;
 }
 
 bool FSM::isNextCycle(){
@@ -40,6 +41,8 @@ bool FSM::isNotRepeatState(){
 void FSM::nextState(ProgramState nextState){
     previousProgramState = programState;
     programState = nextState;
+
+    SensorBoard::line_break.clear();
 }
 
 void FSM::start_timestamp(){
@@ -72,13 +75,21 @@ diff_time::diff_time(){
     current_time = 0;
 }
 
-int getTimeElapsed_us(long long current_time, diff_time *times){
+void getTimeElapsed(long long current_time, diff_time *times, float* dt_s){
     
     times->current_time = current_time;
-    int time_elapsed = times->current_time - times->previous_time;
+    long long time_elapsed = (times->current_time - times->previous_time);
     times->previous_time = times->current_time;
 
-    return time_elapsed;
+    *dt_s = time_elapsed/1000000.0f; 
+}
+void getTimeElapsed(long long current_time, diff_time *times, int* dt_us){
+    
+    times->current_time = current_time;
+    int time_elapsed = (times->current_time - times->previous_time);
+    times->previous_time = times->current_time;
+
+    *dt_us = time_elapsed; 
 }
 
 // BLE_COMMAND

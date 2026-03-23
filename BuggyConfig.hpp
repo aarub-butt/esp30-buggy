@@ -20,6 +20,7 @@ struct SensorConfig{
     Pin sensors[6];
 };
 
+#include "SensorBoard.hpp"
 
 
 enum ProgramState{
@@ -30,7 +31,8 @@ enum ProgramState{
     STATE_ENCODER,
     STATE_ROTATE,
     STATE_DISPLAY,
-    STATE_TELEMETRY
+    STATE_CALIBRATE,
+    STATE_LINE_FOLLOWING
 };
 
 extern SensorConfig sensor_pins;
@@ -38,12 +40,11 @@ extern MotorConfig left_motor_pins;
 extern MotorConfig right_motor_pins;
 
 struct diff_time{
-        int previous_time;
-        int current_time;
+        long long previous_time;
+        long long current_time;
         diff_time();
 };
-
-
+static const int telemetry_size = 64;
 
 class FSM{
     private:
@@ -63,6 +64,8 @@ class FSM{
         static Timer global_timer;
         diff_time cycle_timestamp;
 
+        bool send_telemetry;
+
         bool shouldPrint();
         void start_timestamp();
 
@@ -73,7 +76,7 @@ class FSM{
 
         class BLE_COMMAND{
             public:
-                char command[64];
+                char command[telemetry_size];
                 float value;
 
                 void clear();
@@ -82,5 +85,7 @@ class FSM{
         BLE_COMMAND ble_command;
 };
 
-int getTimeElapsed_us(long long current_time, diff_time *times);
+void getTimeElapsed(long long current_time, diff_time *times, int* dt_us);
+void getTimeElapsed(long long current_time, diff_time *times, float* dt_s);
+
 

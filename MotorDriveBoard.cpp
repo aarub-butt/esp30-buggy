@@ -6,7 +6,7 @@ void MotorDriveBoard::PID_controller::reset(){
     integral = 0;
     previous_error = 0;
 }
-float MotorDriveBoard::PID_controller::calculate(float error, int dt){
+float MotorDriveBoard::PID_controller::calculate(float error, float dt){
     
     float P = kp * error;
 
@@ -24,6 +24,11 @@ float MotorDriveBoard::PID_controller::calculate(float error, int dt){
     
     return output;
 }
+void MotorDriveBoard::PID_controller::setPid(float p, float i , float d){
+    kp = p;
+    ki = i;
+    kd = d;
+}
 
 // Motor Methods
 void MotorDriveBoard::Motor::resetEncoder(){
@@ -35,9 +40,9 @@ void MotorDriveBoard::Motor::resetEncoder(){
 void MotorDriveBoard::Motor::calcDistanceTravelled(){
     distance_travelled = wheel_circumference * (((float) current_pulse_count - previous_pulse_count)/pulses_per_revolution);
 }
-void MotorDriveBoard::Motor::calcSpeed(int time_elapsed){
+void MotorDriveBoard::Motor::calcSpeed(float time_elapsed){
     calcDistanceTravelled();
-    speed = (((distance_travelled) / ( ( time_elapsed )/1000000.0f))*alpha) + (previous_speed *( 1-alpha));
+    speed = ((distance_travelled /  time_elapsed )*alpha) + (previous_speed *( 1-alpha));
     previous_speed = speed;
 }
 
@@ -65,7 +70,7 @@ void MotorDriveBoard::getPWM(float* PWMs){
     PWMs[1] = right_motor.PWM_duty;
 }
 
-void MotorDriveBoard::updateSpeeds(int dt){
+void MotorDriveBoard::updateSpeeds(float dt){
     left_motor.current_pulse_count = left_motor.encoder.getPulses();
     right_motor.current_pulse_count = right_motor.encoder.getPulses();   
     
@@ -75,7 +80,7 @@ void MotorDriveBoard::updateSpeeds(int dt){
     left_motor.previous_pulse_count = left_motor.current_pulse_count;
     right_motor.previous_pulse_count = right_motor.current_pulse_count;
 }
-void MotorDriveBoard::getSpeeds(int dt, float*speeds){
+void MotorDriveBoard::getSpeeds(float dt, float*speeds){
     updateSpeeds(dt);
     speeds[0] = left_motor.speed;
     speeds[1] = right_motor.speed;
@@ -90,8 +95,17 @@ void MotorDriveBoard::getPulseCounts(int* pulse_counts){
     pulse_counts[1] = right_motor.current_pulse_count;
 }
 
+void MotorDriveBoard::SetPwmFromTargetSpeed(float dt, float lt, float rt){
+    updateSpeeds(dt);
+
+    float left_pwm = 0.5f + left_motor.speed_pid.calculate(lt - left_motor.speed, dt);
+    float right_pwm = 0.5f + right_motor.speed_pid.calculate(rt- right_motor.speed, dt);
+
+    setPWM(left_pwm, right_pwm);
+}
 void MotorDriveBoard::updateLineFollower(float error, long long current_time){
-    int dt = (getTimeElapsed_us(current_time, &times))/1000000;
+    float dt;
+    getTimeElapsed(current_time, &times, &dt);
 
     float steering_output = steering_pid.calculate(error, dt);
     
@@ -100,12 +114,10 @@ void MotorDriveBoard::updateLineFollower(float error, long long current_time){
     float target_left_speed = base_speed + steering_output;
     float target_right_speed = base_speed - steering_output;
 
-    updateSpeeds(dt);
-    float left_pwm = 0.5f + left_motor.speed_pid.calculate(target_left_speed - left_motor.speed, dt);
-    float right_pwm = 0.5f + right_motor.speed_pid.calculate(target_right_speed - right_motor.speed, dt);
-
-    setPWM(left_pwm, right_pwm);
+    SetPwmFromTargetSpeed(dt, target_left_speed, target_right_speed);
 }
+
+
 
 // Constructors
 

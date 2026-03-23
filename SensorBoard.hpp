@@ -15,17 +15,34 @@ class SensorBoard{
 
                 float current_sensor_value;
                 float previous_sensor_value;
-                
 
+                float black;
+                float white;
+                
+                float readRaw();
                 float read();
                 LineSensor(PinName pin, float w);
         };
         
-        LineSensor sensors[6];
-    
     public:
+        LineSensor sensors[6];
         SensorBoard(SensorConfig sensor_config);
+        
+        class LineBreak{
+            public:
+            long long start_time;
+            bool isLineBreak;
+            
+            void start(long long current_time);
+            void clear();
 
+            LineBreak(){clear();}
+        };
+        static LineBreak line_break;
+
+        void readRawSensorValues(float* sensorValues);
         void readSensorValues(float* sensorValues);
-        float getLinePosition();
+        bool getLinePosition(float* line_error, long long current_time);
+        void calibrate();
+
 };

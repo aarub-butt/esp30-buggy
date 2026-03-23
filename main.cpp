@@ -46,7 +46,7 @@ SensorConfig sensor_config =
 int main()
 {
 
-    ble pc(PA_11,PA_12,9600);
+    ble pc(PA_11,PA_12,115200);
     MotorDriveBoard mdb(left_motor_config,right_motor_config, PB_4,20000);
     FSM fsm;
     SensorBoard sb(sensor_config);
@@ -62,15 +62,40 @@ int main()
             switch (fsm.getProgramState()){
                 
                 case (STATE_STOP): {
-                    mdb.setEnable(false);
-                    mdb.setPWM(0.5,0.5);
+                    float dt;
+                    getTimeElapsed(fsm.global_timer.elapsed_time().count(),&mdb.times, &dt);
+                    mdb.SetPwmFromTargetSpeed(dt, 0.5f, 0.5f);
                 }
                 break;
-
-                case (STATE_NONE) : {
+                case (STATE_NONE) : 
                     break;
-                }
 
+                case (STATE_DISPLAY):{
+                    char telemetry[telemetry_size*3];
+                    snprintf(telemetry, telemetry_size*3, 
+                    "e=%d,ks=%.2f\r\n\
+                    lpwm=%.2f,kp=%.2f,ki=%.2f,kd=%.2f\r\n\
+                    rpwm=%.2f,kp=%.2f,ki=%.2f,kd=%.2f\r\n"
+                    ,mdb.getEnable(), mdb.dynamic_speed_constant,
+                    mdb.left_motor.PWM_duty, mdb.left_motor.speed_pid.kp,mdb.left_motor.speed_pid.ki,mdb.left_motor.speed_pid.kd,
+                    mdb.right_motor.PWM_duty, mdb.right_motor.speed_pid.kp,mdb.right_motor.speed_pid.ki,mdb.right_motor.speed_pid.kd);
+                  
+                    pc.sendTelemetry(telemetry);
+
+                    ThisThread::sleep_for(100ms);
+                    memset((char*) telemetry,0,telemetry_size*3);
+                    
+                    snprintf(telemetry, telemetry_size*3,
+                    "b:%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\r\n\
+                     w:%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\r\n",
+                    sb.sensors[0].black,sb.sensors[1].black,sb.sensors[2].black,sb.sensors[3].black,sb.sensors[4].black,sb.sensors[5].black,
+                    sb.sensors[0].white,sb.sensors[1].white,sb.sensors[2].white,sb.sensors[3].white,sb.sensors[4].white,sb.sensors[5].white);
+                                     
+                    ThisThread::sleep_for(100ms);
+                    
+                    fsm.nextState(STATE_NONE);
+                }
+                break;
                 case (STATE_ENCODER):
                     ReadingEncoder(&pc,&mdb,&fsm);
                     break;
@@ -79,7 +104,40 @@ int main()
                     ReadingSensors(&sb,&pc,&fsm);
                     break;
 
-            
+                case (STATE_LINE_FOLLOWING): {
+                    float line_error; 
+                    long long current_time = fsm.global_timer.elapsed_time().count();
+                    if (sb.getLinePosition(&line_error, current_time)){
+                        mdb.updateLineFollower(line_error,current_time);
+                    }else{
+                        if (current_time - SensorBoard::line_break.start_time > 100000){
+                            fsm.nextState(STATE_STOP);
+                        }
+                    }
+                }
+                break;
+                case (STATE_ROTATE) :{
+
+                }
+                break;
+                case (STATE_CALIBRATE):{
+
+                }
+                break;
+                case (STATE_INVALID):{
+                    if (fsm.isNotRepeatState()){
+                        char telemetry[] = "INVALID STATE";
+                        pc.sendTelemetry(telemetry);
+                    }
+                    fsm.nextState(fsm.getProgramState());
+                }
+                break;  
+
+
+                default:
+                    fsm.nextState(STATE_INVALID);
+                    break;
+                    
             }
         }
    
