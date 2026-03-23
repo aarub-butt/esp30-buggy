@@ -37,10 +37,6 @@ bool SensorBoard::getLinePosition(float* line_error, long long current_time){
         *line_error = weighted_sum/total_reading;
         return true;
     }else{
-        if (line_break.isLineBreak == false){
-            line_break.isLineBreak = true;
-            line_break.start_time = current_time;
-        }
         return false;
     }
 }
@@ -53,18 +49,6 @@ void SensorBoard::calibrate(){
         if (sensor_value > *black) *black = sensor_value;
         if (sensor_value < *white) *white = sensor_value;  
     }
-}
-
-// LineBreak Methods
-
-void SensorBoard::LineBreak::clear(){
-    start_time = 0;
-    isLineBreak = false;
-}
-
-void SensorBoard::LineBreak::start(long long current_time){
-    start_time = current_time;
-    isLineBreak = true;
 }
 
 // Constructors

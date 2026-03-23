@@ -112,7 +112,18 @@ int main()
                     float dt;
                     getTimeElapsed(current_time, &mdb.times, &dt);
 
+                    static bool is_line_break;
+                    static long long line_break_start_time;
+                    if (fsm.isNotRepeatState()){
+                        is_line_break = false;
+                        line_break_start_time = 0;
+                        mdb.steering_pid.reset();
+                        mdb.right_motor.speed_pid.reset();
+                        mdb.left_motor.speed_pid.reset();
+                    }
+
                     if (sb.getLinePosition(&line_error, current_time)){
+                        
                         mdb.updateLineFollower(line_error,dt);
                         if (fsm.shouldPrint()){
                             char telemetry[telemetry_size];
@@ -125,8 +136,15 @@ int main()
 
                             pc.sendTelemetry(telemetry,fsm.global_timer.elapsed_time().count(), &fsm.cycle_timestamp);
                         }
+
                     }else{
-                        if (current_time - SensorBoard::line_break.start_time > 100000){
+
+                        if (is_line_break == false){
+                            is_line_break = true;
+                            line_break_start_time = current_time;
+                        }
+
+                        if (current_time - line_break_start_time > 100000){
                             fsm.nextState(STATE_STOP);
                         }
                     }
@@ -137,6 +155,7 @@ int main()
                     getTimeElapsed(fsm.global_timer.elapsed_time().count(), &mdb.times, &dt);
                     if (fsm.isNotRepeatState()){
                         mdb.startRotate(fsm.ble_command.value);
+                        mdb.rotation_pid.reset();
                     }
                     if(mdb.updateRotate(dt)){
                         fsm.nextState(fsm.return_state);
@@ -151,6 +170,7 @@ int main()
 
                     if (fsm.isNotRepeatState()){
                         mdb.startRotate(720);
+                        mdb.rotation_pid.reset();
                     }
                     if(mdb.updateRotate(dt)){
                         fsm.nextState(STATE_DISPLAY);

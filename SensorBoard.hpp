@@ -27,18 +27,6 @@ class SensorBoard{
     public:
         LineSensor sensors[6];
         SensorBoard(SensorConfig sensor_config);
-        
-        class LineBreak{
-            public:
-            long long start_time;
-            bool isLineBreak;
-            
-            void start(long long current_time);
-            void clear();
-
-            LineBreak(){clear();}
-        };
-        static LineBreak line_break;
 
         void readRawSensorValues(float* sensorValues);
         void readSensorValues(float* sensorValues);

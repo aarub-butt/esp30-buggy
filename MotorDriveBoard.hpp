@@ -78,9 +78,11 @@ class MotorDriveBoard{
         int _target_pulse_count;
         int _rotation_stage;
         bool rotate(float dt);
-        static PID_controller rotation_pid;
 
     public:
+
+        static PID_controller rotation_pid;
+
 
         Motor left_motor;
         Motor right_motor;
