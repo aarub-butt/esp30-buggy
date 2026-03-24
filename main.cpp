@@ -60,10 +60,13 @@ int main()
 
         if (fsm.isNextCycle()){
             heartbeat_count++;
+            
+            // check if ble connection is working
+            /*
             if (heartbeat_count >= 1000){
                 pc.sendTelemetry(heartbeat);
                 heartbeat_count = 0;
-            }
+            } */
 
             fsm.start_timestamp();
             fsm.ble_command.clear();
@@ -77,33 +80,43 @@ int main()
             switch (fsm.getProgramState()){
                 
                 case (STATE_STOP): {
+                    if (fsm.isNotRepeatState()){
+                        char state[] = "stop\r\n";
+                        pc.sendTelemetry(state);
+                    }
                     if (mdb.stop(dt)) fsm.nextState(STATE_NONE);
                 }
                 break;
-                case (STATE_NONE) : 
+                case (STATE_NONE) : {
+                    if (fsm.isNotRepeatState()){
+                        char state[] = "none\r\n";
+                        pc.sendTelemetry(state);
+                    }
+                }
                     break;
                 case (STATE_DISPLAY):{
                     char telemetry[telemetry_size*3];
-                    snprintf(telemetry, telemetry_size*3, 
-                    "e=%d,ks=%.2f\r\n\
-                    lpwm=%.2f,kp=%.2f,ki=%.2f,kd=%.2f\r\n\
-                    rpwm=%.2f,kp=%.2f,ki=%.2f,kd=%.2f\r\n"
+                    snprintf(telemetry, telemetry_size*3,
+                    "e=%d,ks=%.2f\r\n"
+                    "lpwm=%.2f,kp=%.2f,ki=%.2f,kd=%.2f\r\n"
+                    "rpwm=%.2f,kp=%.2f,ki=%.2f,kd=%.2f\r\n"
                     ,mdb.getEnable(), mdb.dynamic_speed_constant,
                     mdb.left_motor.PWM_duty, mdb.left_motor.speed_pid.kp,mdb.left_motor.speed_pid.ki,mdb.left_motor.speed_pid.kd,
                     mdb.right_motor.PWM_duty, mdb.right_motor.speed_pid.kp,mdb.right_motor.speed_pid.ki,mdb.right_motor.speed_pid.kd);
                   
                     pc.sendTelemetry(telemetry);
-
-                    ThisThread::sleep_for(100ms);
+                    ThisThread::sleep_for(500ms);
                     memset((char*) telemetry,0,telemetry_size*3);
                     
                     snprintf(telemetry, telemetry_size*3,
-                    "b:%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\r\n\
-                     w:%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\r\n",
+                    "b:%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\r\n"
+                    "w:%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\r\n",
                     sb.sensors[0].black,sb.sensors[1].black,sb.sensors[2].black,sb.sensors[3].black,sb.sensors[4].black,sb.sensors[5].black,
                     sb.sensors[0].white,sb.sensors[1].white,sb.sensors[2].white,sb.sensors[3].white,sb.sensors[4].white,sb.sensors[5].white);
-                                     
-                    ThisThread::sleep_for(100ms);
+                    
+                    pc.sendTelemetry(telemetry);
+                    memset((char*) telemetry,0,telemetry_size*3);
+                    ThisThread::sleep_for(500ms);
 
                     fsm.nextState(STATE_NONE);
                 }
@@ -127,6 +140,9 @@ int main()
                         mdb.steering_pid.reset();
                         mdb.right_motor.speed_pid.reset();
                         mdb.left_motor.speed_pid.reset();
+
+                        char state[] = "line following";
+                        pc.sendTelemetry(state);
                     }
 
                     if (sb.getLinePosition(&line_error, current_time)){
@@ -136,12 +152,12 @@ int main()
                             char telemetry[telemetry_size];
                             
                             snprintf(telemetry,telemetry_size,
-                            "%.4f,%.4f,%.4f,%.4f,%.4f\r\n",
+                            ",%.4f,%.4f,%.4f,%.4f,%.4f\r\n",
                             line_error,
                             mdb.left_motor.speed ,mdb.left_motor.speed_error,
                             mdb.right_motor.speed ,mdb.right_motor.speed_error);
-
-                            pc.sendTelemetry(telemetry,fsm.global_timer.elapsed_time().count(), &fsm.cycle_timestamp);
+                            pc.sendTelemetry(telemetry);
+                            //pc.sendTelemetry(telemetry,fsm.global_timer.elapsed_time().count(), &fsm.cycle_timestamp);
                         }
 
                     }else{

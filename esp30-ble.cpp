@@ -38,19 +38,19 @@ void ble::ParseCommand(FSM* fsm, FSM::BLE_COMMAND *command_ptr, MotorDriveBoard*
         mdb->setEnable(!mdb->getEnable());
     }
 
-    else if (sscanf(command_ptr->command, "pwm=%f,%f", &a, &b) == 1) {
-        mdb->setPWM(a, b);
+    else if (sscanf(command_ptr->command, "pwm=%f,%f", &a, &b) == 2) {
+        mdb->setPWM(a,b);
     }
 
-    else if (sscanf(command_ptr->command, "lm=%f,%f,%f", &a,&b,&c) == 1) {
+    else if (sscanf(command_ptr->command, "lm=%f,%f,%f", &a,&b,&c) == 3) {
         mdb->left_motor.speed_pid.setPid(a, b, c);
     }
 
-    else if (sscanf(command_ptr->command, "rm=%f,%f,%f", &a,&b,&c) == 1) {
+    else if (sscanf(command_ptr->command, "rm=%f,%f,%f", &a,&b,&c) == 3) {
         mdb->right_motor.speed_pid.setPid(a, b, c);
     }
 
-    else if (sscanf(command_ptr->command, "steer=%f,%f,%f", &a,&b,&c) == 1) {
+    else if (sscanf(command_ptr->command, "steer=%f,%f,%f", &a,&b,&c) == 3) {
         mdb->steering_pid.setPid(a, b, c);
     }
 
