@@ -15,6 +15,7 @@ class SensorBoard{
 
                 float current_sensor_value;
                 float previous_sensor_value;
+                float normalised;
 
                 float black;
                 float white;

@@ -54,7 +54,7 @@ class FSM{
 
         Ticker buggy_rate;
         void InitiateCycle();
-        bool var_isNextCycle;
+        volatile bool var_isNextCycle;
         int var_shouldPrint; 
         bool should_send_telemetry;
 

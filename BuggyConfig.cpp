@@ -46,8 +46,6 @@ bool FSM::isNotRepeatState(){
 void FSM::nextState(ProgramState nextState){
     previousProgramState = programState;
     programState = nextState;
-
-    SensorBoard::line_break.clear();
 }
 
 void FSM::start_timestamp(){
@@ -64,7 +62,7 @@ ProgramState FSM::getPreviousProgramState(){
 }
 
 bool FSM::shouldPrint(){
-    if (var_shouldPrint == 20 && should_send_telemetry == true){
+    if (var_shouldPrint >= 20 && should_send_telemetry == true){
         var_shouldPrint = 1;
         return true;
     }else{

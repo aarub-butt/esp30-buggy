@@ -73,13 +73,13 @@ class MotorDriveBoard{
 
 
         void updateEncoder();
-        void updateSpeeds(float dt);
 
         int _target_pulse_count;
         int _rotation_stage;
         bool rotate(float dt);
 
     public:
+        void updateSpeeds(float dt);
 
         static PID_controller rotation_pid;
 
@@ -97,7 +97,7 @@ class MotorDriveBoard{
         bool getEnable();
         void setPWM(float left, float right);
         void getPWM(float* PWMs);
-        void getSpeeds(float dt, float* speeds);
+        void getSpeeds(float* speeds);
         void getPulseCounts(int* enocder_values);
         void resetEncoders();
 

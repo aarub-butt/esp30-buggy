@@ -10,9 +10,10 @@ float SensorBoard::LineSensor::readRaw(){
 
 float SensorBoard::LineSensor::read(){
     readRaw();
-    current_sensor_value = 1.0f- ((current_sensor_value-white)/(black-white));
-
-    return current_sensor_value;
+    normalised = 1.0f- ((current_sensor_value-white)/(black-white));
+    if (normalised > 1.0f) normalised = 1.0f;
+    if (normalised < 0.0f) normalised = 0.0f;
+    return normalised;
 }
 
 // SensorBoard Methods
@@ -68,5 +69,4 @@ sensors{
     {sensor_config.sensors[3].pin , sensor_config.sensors[3].weight},    
     {sensor_config.sensors[4].pin , sensor_config.sensors[4].weight},
     {sensor_config.sensors[5].pin , sensor_config.sensors[5].weight}
-}{
-}
+}{}

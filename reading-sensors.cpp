@@ -33,11 +33,8 @@ void ReadingEncoder(ble* pc, MotorDriveBoard* mdb, FSM *fsm){
         int pulse_counts[2];
         float speeds[2];
 
-        float dt;
-        getTimeElapsed(fsm->global_timer.elapsed_time().count(),&mdb->times, &dt);
-        mdb->getSpeeds(dt, speeds);
+        mdb->getSpeeds(speeds);
         mdb->getPulseCounts(pulse_counts);
-
 
         snprintf(telemetry, telemetry_size,
         "l:%d,%.2f,\r\nr:%d,%.2f\r\n",

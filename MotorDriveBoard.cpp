@@ -84,8 +84,7 @@ void MotorDriveBoard::updateSpeeds(float dt){
     left_motor.previous_pulse_count = left_motor.current_pulse_count;
     right_motor.previous_pulse_count = right_motor.current_pulse_count;
 }
-void MotorDriveBoard::getSpeeds(float dt, float*speeds){
-    updateSpeeds(dt);
+void MotorDriveBoard::getSpeeds(float*speeds){
     speeds[0] = left_motor.speed;
     speeds[1] = right_motor.speed;
 }
@@ -100,8 +99,6 @@ void MotorDriveBoard::getPulseCounts(int* pulse_counts){
 }
 
 void MotorDriveBoard::SetPwmFromTargetSpeed(float dt, float lt, float rt){
-    updateSpeeds(dt);
-
     left_motor.speed_error = lt - left_motor.speed;
     right_motor.speed_error = rt- right_motor.speed;
     
@@ -118,10 +115,7 @@ void MotorDriveBoard::updateLineFollower(float error, float dt){
     float target_left_speed = base_speed + steering_output;
     float target_right_speed = base_speed - steering_output;
 
-
-
     SetPwmFromTargetSpeed(dt, target_left_speed, target_right_speed);
-
 }
 
 bool MotorDriveBoard::stop(float dt){

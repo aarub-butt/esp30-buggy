@@ -35,12 +35,12 @@ MotorConfig right_motor_config =
 
 SensorConfig sensor_config = 
 {{
-{A0,0.1f}
-,{A1,0.2f}
-,{A2,0.3f}
-,{A3,0.4f}
-,{A4,0.5f}
-,{A5,0.6f}
+{A0,-1.0f}
+,{A1,-0.6f}
+,{A2,-0.2f}
+,{A3,0.2f}
+,{A4,0.6f}
+,{A5,1.0f}
 }};
 
 
@@ -48,25 +48,35 @@ SensorConfig sensor_config =
 int main()
 {
 
-    ble pc(PA_11,PA_12,115200);
+    ble pc(PA_11,PA_12,9600);
     MotorDriveBoard mdb(left_motor_config,right_motor_config, PB_4,20000);
     FSM fsm;
     SensorBoard sb(sensor_config);
 
+    int heartbeat_count = 0;
+    char heartbeat[] = "heartbeat\r\n";
 
     while (true){
 
         if (fsm.isNextCycle()){
+            heartbeat_count++;
+            if (heartbeat_count >= 1000){
+                pc.sendTelemetry(heartbeat);
+                heartbeat_count = 0;
+            }
+
             fsm.start_timestamp();
             fsm.ble_command.clear();
             pc.getCommand(&fsm, &fsm.ble_command, &mdb);
 
+            float dt;
+            long long current_time = fsm.global_timer.elapsed_time().count();
+            getTimeElapsed(current_time, &mdb.times, &dt);
+            mdb.updateSpeeds(dt);
             
             switch (fsm.getProgramState()){
                 
                 case (STATE_STOP): {
-                    float dt;
-                    getTimeElapsed(fsm.global_timer.elapsed_time().count(),&mdb.times, &dt);
                     if (mdb.stop(dt)) fsm.nextState(STATE_NONE);
                 }
                 break;
@@ -94,7 +104,7 @@ int main()
                     sb.sensors[0].white,sb.sensors[1].white,sb.sensors[2].white,sb.sensors[3].white,sb.sensors[4].white,sb.sensors[5].white);
                                      
                     ThisThread::sleep_for(100ms);
-                    
+
                     fsm.nextState(STATE_NONE);
                 }
                 break;
@@ -108,9 +118,6 @@ int main()
 
                 case (STATE_LINE_FOLLOWING): {
                     float line_error; 
-                    long long current_time = fsm.global_timer.elapsed_time().count();
-                    float dt;
-                    getTimeElapsed(current_time, &mdb.times, &dt);
 
                     static bool is_line_break;
                     static long long line_break_start_time;
@@ -151,8 +158,6 @@ int main()
                 }
                 break;
                 case (STATE_ROTATE) :{
-                    float dt;
-                    getTimeElapsed(fsm.global_timer.elapsed_time().count(), &mdb.times, &dt);
                     if (fsm.isNotRepeatState()){
                         mdb.startRotate(fsm.ble_command.value);
                         mdb.rotation_pid.reset();
@@ -163,11 +168,7 @@ int main()
                 }
                 break;
                 case (STATE_CALIBRATE):{
-                    float dt;
-                    getTimeElapsed(fsm.global_timer.elapsed_time().count(), &mdb.times, &dt);
-
                     sb.calibrate();
-
                     if (fsm.isNotRepeatState()){
                         mdb.startRotate(720);
                         mdb.rotation_pid.reset();
@@ -187,8 +188,7 @@ int main()
                 break;  
                 default:
                     fsm.nextState(STATE_INVALID);
-                    break;
-                    
+                    break;       
             }
         }
    
