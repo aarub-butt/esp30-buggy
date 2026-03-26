@@ -13,8 +13,8 @@ float MotorDriveBoard::PID_controller::calculate(float error, float dt){
     integral += error *dt;
     if (ki != 0){
         float max_I = output_limit / ki;
-        if (integral > max_I) integral = max_I;
-        if (integral < -max_I) integral = -max_I;
+        if (integral > max_I/2) integral = max_I/2;
+        if (integral < -max_I/2) integral = -max_I/2;
     }
     float I = ki*integral;
 
@@ -107,6 +107,7 @@ void MotorDriveBoard::SetPwmFromTargetSpeed(float dt, float lt, float rt){
 
     setPWM(left_pwm, right_pwm);
 }
+
 void MotorDriveBoard::updateLineFollower(float error, float dt){
     float steering_output = steering_pid.calculate(error, dt);
     
@@ -191,7 +192,7 @@ MotorDriveBoard::MotorDriveBoard(MotorConfig left_motor_config, MotorConfig righ
 }
 
 MotorDriveBoard::Motor::Motor(MotorConfig motor_config) :
-isBipolar(motor_config.isBipolar), PWM(motor_config.pwm), encoder(motor_config.channel_A,motor_config.channel_B, NC, pulses_per_revolution)
+isBipolar(motor_config.isBipolar), PWM(motor_config.pwm), encoder(motor_config.channel_A,motor_config.channel_B, NC, pulses_per_revolution,QEI::X4_ENCODING)
 ,speed_pid(motor_config.kp,motor_config.ki,motor_config.kd,motor_config.lim)
 {
     speed = 0.0f;

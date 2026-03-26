@@ -26,6 +26,7 @@ void ReadingEncoder(ble* pc, MotorDriveBoard* mdb, FSM *fsm){
     if (fsm->isNotRepeatState()){
         char telemetry[] = "lc,ls,rc,rs\r\n";
         pc->sendTelemetry(telemetry);
+        mdb->resetEncoders();
     }
 
     if (fsm->shouldPrint()){
@@ -35,13 +36,19 @@ void ReadingEncoder(ble* pc, MotorDriveBoard* mdb, FSM *fsm){
 
         mdb->getSpeeds(speeds);
         mdb->getPulseCounts(pulse_counts);
-
+        
         snprintf(telemetry, telemetry_size,
-        "l:%d,%.2f,\r\nr:%d,%.2f\r\n",
+        "%d,%.2f,%d,%.2f\r\n",
         pulse_counts[0],speeds[0],
         pulse_counts[1], speeds[1]);
         
-        pc->sendTelemetry(telemetry, fsm->global_timer.elapsed_time().count(), &fsm->cycle_timestamp);
+        /*
+        snprintf(telemetry, telemetry_size,
+        "%.4f,%.4f\r\n",
+        speeds[0],speeds[1]);   */     
+        
+        pc->sendTelemetry(telemetry);
+        //pc->sendTelemetry(telemetry, fsm->global_timer.elapsed_time().count(), &fsm->cycle_timestamp);
     }
 
 }

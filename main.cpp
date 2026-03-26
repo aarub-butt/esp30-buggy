@@ -13,10 +13,10 @@
 
 const float  MotorDriveBoard::wheel_track_length = 0.22;
 const float MotorDriveBoard::Motor::wheel_circumference = 3.14 * 0.0779;
-const int MotorDriveBoard::Motor::pulses_per_revolution = 512;
+const int MotorDriveBoard::Motor::pulses_per_revolution = 256*4;
 
 float SensorBoard::LineSensor::alpha = 0.7;
-float MotorDriveBoard::alpha = 0.7;
+float MotorDriveBoard::alpha = 0.1;
 
 MotorDriveBoard::PID_controller MotorDriveBoard::steering_pid(1,0,0,1);
 MotorDriveBoard::PID_controller MotorDriveBoard::rotation_pid(0.002f,0,0,0.3);
@@ -42,8 +42,6 @@ SensorConfig sensor_config =
 ,{A4,0.6f}
 ,{A5,1.0f}
 }};
-
-
 
 int main()
 {
@@ -199,9 +197,34 @@ int main()
                         char telemetry[] = "INVALID STATE";
                         pc.sendTelemetry(telemetry);
                     }
-                    fsm.nextState(fsm.getProgramState());
                 }
-                break;  
+                break;
+
+                case (STATE_SPEED):{
+                    static float target_speed;
+                    
+                    if (fsm.isNotRepeatState()){
+                        target_speed = fsm.ble_command.value;
+                        char telemetry[] = "testingSpeed";
+                        pc.sendTelemetry(telemetry);
+                        mdb.resetEncoders();
+                    }
+
+                    mdb.SetPwmFromTargetSpeed(dt,0, target_speed);
+                    if (fsm.shouldPrint()){
+                        char telemetry[telemetry_size];
+                        float speeds[2];
+                        mdb.getSpeeds(speeds);
+
+                        snprintf(telemetry, telemetry_size,
+                        ",%.2f,%.4f,%.4f\r\n",
+                        target_speed,speeds[1],mdb.right_motor.PWM_duty);        
+                        
+                        pc.sendTelemetry(telemetry);
+                    }
+                }
+                break;
+
                 default:
                     fsm.nextState(STATE_INVALID);
                     break;       

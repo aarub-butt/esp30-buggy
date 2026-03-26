@@ -32,7 +32,8 @@ enum ProgramState{
     STATE_ROTATE,
     STATE_DISPLAY,
     STATE_CALIBRATE,
-    STATE_LINE_FOLLOWING
+    STATE_LINE_FOLLOWING,
+    STATE_SPEED
 };
 
 extern SensorConfig sensor_pins;

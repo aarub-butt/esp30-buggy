@@ -25,6 +25,11 @@ void ble::ParseCommand(FSM* fsm, FSM::BLE_COMMAND *command_ptr, MotorDriveBoard*
         fsm->return_state = fsm->getPreviousProgramState();
         fsm->nextState(STATE_ROTATE);
     }
+
+    else if(sscanf(command_ptr->command, "speed=%f", &command_ptr->value) == 1){
+        fsm->nextState(STATE_NONE);
+        fsm->nextState(STATE_SPEED);
+    }
     
     else if(strcmp(command_ptr->command,"encoder") == 0){
         fsm->nextState(STATE_ENCODER);
