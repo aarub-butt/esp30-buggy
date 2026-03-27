@@ -57,10 +57,10 @@ int main()
     while (true){
 
         if (fsm.isNextCycle()){
-            heartbeat_count++;
             
             // check if ble connection is working
             /*
+            heartbeat_count++;
             if (heartbeat_count >= 1000){
                 pc.sendTelemetry(heartbeat);
                 heartbeat_count = 0;
