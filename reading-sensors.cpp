@@ -1,7 +1,7 @@
 #include "reading-sensors.hpp"
 #include "BuggyConfig.hpp"
 
-void ReadingSensors(SensorBoard* sensor_board, ble* pc, FSM *fsm){
+void ReadingSensorBoard(SensorBoard* sensor_board, ble* pc, FSM *fsm){
     if (fsm->isNotRepeatState()){
         char telemetry[] = "s:s1,s2,s3,s4,s5,s6\r\n";
         pc->sendTelemetry(telemetry);

@@ -84,6 +84,7 @@ void MotorDriveBoard::updateSpeeds(float dt){
     left_motor.previous_pulse_count = left_motor.current_pulse_count;
     right_motor.previous_pulse_count = right_motor.current_pulse_count;
 }
+
 void MotorDriveBoard::getSpeeds(float*speeds){
     speeds[0] = left_motor.speed;
     speeds[1] = right_motor.speed;
@@ -197,7 +198,6 @@ isBipolar(motor_config.isBipolar), PWM(motor_config.pwm), encoder(motor_config.c
 {
     speed = 0.0f;
     PWM_duty = 0.0f;
-    RPM = 0.0f;
     previous_speed = 0.0f;
 
     resetEncoder();

@@ -124,7 +124,7 @@ int main()
                     break;
                 
                 case (STATE_SENSOR):
-                    ReadingSensors(&sb,&pc,&fsm);
+                    ReadingSensorBoard(&sb,&pc,&fsm);
                     break;
 
                 case (STATE_LINE_FOLLOWING): {
@@ -143,7 +143,7 @@ int main()
                         pc.sendTelemetry(state);
                     }
 
-                    if (sb.getLinePosition(&line_error, current_time)){
+                    if (sb.getLinePosition(&line_error)){
                         
                         mdb.updateLineFollower(line_error,dt);
                         if (fsm.shouldPrint()){

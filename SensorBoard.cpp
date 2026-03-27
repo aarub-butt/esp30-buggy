@@ -24,7 +24,7 @@ void SensorBoard::readSensorValues(float* sensorValues){
     }
 }
 
-bool SensorBoard::getLinePosition(float* line_error, long long current_time){
+bool SensorBoard::getLinePosition(float* line_error){
     float weighted_sum = 0.0f;
     float total_reading = 0.0f;
 
