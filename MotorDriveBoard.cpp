@@ -103,7 +103,7 @@ void MotorDriveBoard::SetPwmFromTargetSpeed(float dt, float lt, float rt){
     left_motor.speed_error = lt - left_motor.speed;
     right_motor.speed_error = rt- right_motor.speed;
 
-    static float kff = 0.5f;
+    static float kff = 0.65f;
     
     float left_pwm = 0.5f + (lt * kff) + left_motor.speed_pid.calculate(left_motor.speed_error, dt);
     float right_pwm = 0.5f + (rt * kff) + right_motor.speed_pid.calculate(right_motor.speed_error, dt);
@@ -119,7 +119,7 @@ void MotorDriveBoard::SetPwmFromTargetSpeed(float dt, float lt, float rt){
 void MotorDriveBoard::updateLineFollower(float error, float dt){
     float steering_output = steering_pid.calculate(error, dt);
     
-    float base_speed = max_speed - (abs(error) * dynamic_speed_constant);
+    float base_speed = max_speed ; // - (abs(error) * dynamic_speed_constant);
 
     float target_left_speed = base_speed + steering_output;
     float target_right_speed = base_speed - steering_output;
@@ -130,18 +130,23 @@ void MotorDriveBoard::updateLineFollower(float error, float dt){
 bool MotorDriveBoard::stop(float dt){
 
 
-    static float braking_target_speed = 0.0f;
+    static float left_braking_target_speed = 0.0f;
+    static float right_braking_target_speed = 0.0f;
     static bool is_braking = false;
     static float decelerate_rate = 0.3f;
     
     if (is_braking == false){
-        braking_target_speed = ( abs(left_motor.speed) + abs(right_motor.speed) ) /2.0f;
+        left_braking_target_speed = left_motor.speed;
+        right_braking_target_speed = right_motor.speed;
         is_braking = true;
     }
 
-    braking_target_speed -= (decelerate_rate * dt);
+    if (left_braking_target_speed >= 0.0f) left_braking_target_speed -= (decelerate_rate * dt);
+    if (left_braking_target_speed < 0.0f) left_braking_target_speed += (decelerate_rate * dt);
+    if (right_braking_target_speed >= 0.0f) right_braking_target_speed -= (decelerate_rate * dt);
+    if (right_braking_target_speed < 0.0f) right_braking_target_speed += (decelerate_rate * dt);
 
-    if (braking_target_speed <= 0.0f){
+    if (abs(left_braking_target_speed) <= 0.1f && abs(right_braking_target_speed) < 0.1f){
 
         setPWM(0.5f,0.5f);
         left_motor.speed_pid.reset();
@@ -151,7 +156,7 @@ bool MotorDriveBoard::stop(float dt){
         return true;
     }
 
-    SetPwmFromTargetSpeed(dt, braking_target_speed, braking_target_speed);
+    SetPwmFromTargetSpeed(dt, left_braking_target_speed, right_braking_target_speed);
     return false;
 }
 

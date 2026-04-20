@@ -20,7 +20,7 @@ float MotorDriveBoard::alpha = 0.1;
 
 MotorDriveBoard::PID_controller MotorDriveBoard::steering_pid(1,0,0,1);
 float MotorDriveBoard::dynamic_speed_constant = 1;
-float MotorDriveBoard::max_speed = 0.4f;
+float MotorDriveBoard::max_speed = 0.2f;
 
 MotorConfig left_motor_config = 
 {PC_4,PA_9 
@@ -115,6 +115,14 @@ int main()
                     memset((char*) telemetry,0,telemetry_size*3);
                     ThisThread::sleep_for(500ms);
 
+                    snprintf(telemetry, telemetry_size*3,
+                    "st:kp=%.2f,ki=%.2f,kd=%.2f\r\n",
+                    mdb.steering_pid.kp,mdb.steering_pid.ki,mdb.steering_pid.kd);
+
+                    pc.sendTelemetry(telemetry);
+                    memset((char*) telemetry,0,telemetry_size*3);
+                    ThisThread::sleep_for(500ms);
+
                     fsm.nextState(STATE_NONE);
                 }
                 break;
@@ -164,7 +172,7 @@ int main()
                             line_break_start_time = current_time;
                         }
 
-                        if (current_time - line_break_start_time > (100000)){
+                        if ( (current_time - line_break_start_time) > (100000)){
                             fsm.nextState(STATE_STOP);
                         }
                     }
@@ -193,7 +201,7 @@ int main()
                 case (STATE_CALIBRATE):{
                     sb.calibrate();
                     if (fsm.isNotRepeatState()){
-                        mdb.startRotate(720);
+                        mdb.startRotate(360);
                     }
                     if(mdb.updateRotate(dt)){
                         fsm.nextState(STATE_DISPLAY);
