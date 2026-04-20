@@ -62,7 +62,7 @@ ProgramState FSM::getPreviousProgramState(){
 }
 
 bool FSM::shouldPrint(){
-    if (var_shouldPrint >= 20 && should_send_telemetry == true){
+    if (var_shouldPrint >= 40 && should_send_telemetry == true){
         var_shouldPrint = 1;
         return true;
     }else{

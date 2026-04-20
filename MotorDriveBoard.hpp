@@ -133,17 +133,7 @@ class MotorDriveBoard{
                 Motor(MotorConfig motor_config);                
         };
 
-
-
-
         int _target_pulse_count; ///< Varaible for target pulse count for rotation
-        int _rotation_stage; ///< Variable storing state of rotation, stop -> rotate -> stop
-        /**
-        * @brief Calculate PWM output using @ref MotorDriveBoard::rotation_pid and @ref MotorDriveBoard::SetPwmFromTargetSpeed() for motors to rotate buggy until @ref _target_pulse_count achieved
-        * @param dt Time since previous call
-        * @return Return true when rotation is finished
-        */
-        bool rotate(float dt);
 
     public:
         /**
@@ -151,9 +141,6 @@ class MotorDriveBoard{
         * @param dt Time since previous call of function
         */
         void updateSpeeds(float dt);
-
-        static PID_controller rotation_pid; ///< PID controller for rotating smoothly
-
 
         Motor left_motor; ///< Encapsulating control for left motor
         Motor right_motor; ///< Encapsulating control for right motor
@@ -230,7 +217,6 @@ class MotorDriveBoard{
         void updateLineFollower(float error, float dt);
 
 
-        bool _is_rotating; ///< Check whether should be rotating 
         /** 
         * @brief Set @ref _is_rotating to true and calculate @ref _target_pulse_count to end rotating
         * @param degree Amount of degree to rotate. Positive values rotating clockwise, negative values rotating anti-clockwise

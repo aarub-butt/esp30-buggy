@@ -13,8 +13,8 @@ float MotorDriveBoard::PID_controller::calculate(float error, float dt){
     integral += error *dt;
     if (ki != 0){
         float max_I = output_limit / ki;
-        if (integral > max_I/2) integral = max_I/2;
-        if (integral < -max_I/2) integral = -max_I/2;
+        if (integral > max_I) integral = max_I;
+        if (integral < -max_I) integral = -max_I;
     }
     float I = ki*integral;
 
@@ -102,9 +102,16 @@ void MotorDriveBoard::getPulseCounts(int* pulse_counts){
 void MotorDriveBoard::SetPwmFromTargetSpeed(float dt, float lt, float rt){
     left_motor.speed_error = lt - left_motor.speed;
     right_motor.speed_error = rt- right_motor.speed;
+
+    static float kff = 0.5f;
     
-    float left_pwm = 0.5f + left_motor.speed_pid.calculate(left_motor.speed_error, dt);
-    float right_pwm = 0.5f + right_motor.speed_pid.calculate(right_motor.speed_error, dt);
+    float left_pwm = 0.5f + (lt * kff) + left_motor.speed_pid.calculate(left_motor.speed_error, dt);
+    float right_pwm = 0.5f + (rt * kff) + right_motor.speed_pid.calculate(right_motor.speed_error, dt);
+
+    if (left_pwm > 1.0f) left_pwm = 1.0f;
+    if (left_pwm < 0.0f) left_pwm = 0.0f;
+    if (right_pwm > 1.0f) right_pwm = 1.0f;
+    if (right_pwm < 0.0f) right_pwm = 0.0f;
 
     setPWM(left_pwm, right_pwm);
 }
@@ -121,58 +128,56 @@ void MotorDriveBoard::updateLineFollower(float error, float dt){
 }
 
 bool MotorDriveBoard::stop(float dt){
-    if (abs(left_motor.speed) > 0.05f || abs(right_motor.speed) > 0.05f){
-        SetPwmFromTargetSpeed(dt, 0.0f, 0.0f);
-        return false;
+
+
+    static float braking_target_speed = 0.0f;
+    static bool is_braking = false;
+    static float decelerate_rate = 0.3f;
+    
+    if (is_braking == false){
+        braking_target_speed = ( abs(left_motor.speed) + abs(right_motor.speed) ) /2.0f;
+        is_braking = true;
     }
-    return true;
+
+    braking_target_speed -= (decelerate_rate * dt);
+
+    if (braking_target_speed <= 0.0f){
+
+        setPWM(0.5f,0.5f);
+        left_motor.speed_pid.reset();
+        right_motor.speed_pid.reset();
+
+        is_braking = false;
+        return true;
+    }
+
+    SetPwmFromTargetSpeed(dt, braking_target_speed, braking_target_speed);
+    return false;
 }
 
 void MotorDriveBoard::startRotate(float degree){
     _target_pulse_count = ((wheel_track_length/2)*((3.1415f/180)*degree))*(Motor::pulses_per_revolution/Motor::wheel_circumference);
-    _rotation_stage = 0;
-    _is_rotating = true;
 }
 bool MotorDriveBoard::updateRotate(float dt){
-    if (_is_rotating != true){
-        return true;
-    }
-
-    switch(_rotation_stage){
-        case (0):
-            if (stop(dt)){
-                resetEncoders();
-                _rotation_stage = 1;
-            }
-            break;
-        
-        case (1):
-            if (rotate(dt)){
-                _rotation_stage = 2;
-            }
-            break;
-
-        case (2): 
-            if (stop(dt)){
-                _is_rotating = false;
-                return true;
-            }
-            break;
-    }
-    return false;
-}
-bool MotorDriveBoard::rotate(float dt){
     
-    int error = _target_pulse_count - ((left_motor.current_pulse_count - right_motor.current_pulse_count) /2);
-    if (abs(error) < 10){
+    int error = abs(_target_pulse_count) - ((abs(left_motor.current_pulse_count) + abs(right_motor.current_pulse_count)) /2);
+
+    if (error < 10){
+        setPWM(0.5f,0.5f);
         return true;
     }
 
-    float output = rotation_pid.calculate(error, dt);
-    SetPwmFromTargetSpeed(dt, output, -output);
+    static float turn_speed = 0.2f;
+
+    if (_target_pulse_count > 0){
+        SetPwmFromTargetSpeed(dt, turn_speed, -turn_speed);
+    } else{
+        SetPwmFromTargetSpeed(dt, -turn_speed, turn_speed);
+    }
 
     return false;
 }
+
 
 // Constructors
 

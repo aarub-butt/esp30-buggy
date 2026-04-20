@@ -19,28 +19,27 @@ float SensorBoard::LineSensor::alpha = 0.7;
 float MotorDriveBoard::alpha = 0.1;
 
 MotorDriveBoard::PID_controller MotorDriveBoard::steering_pid(1,0,0,1);
-MotorDriveBoard::PID_controller MotorDriveBoard::rotation_pid(0.002f,0,0,0.3);
 float MotorDriveBoard::dynamic_speed_constant = 1;
-float MotorDriveBoard::max_speed = 1;
+float MotorDriveBoard::max_speed = 0.4f;
 
 MotorConfig left_motor_config = 
 {PC_4,PA_9 
 ,PB_15,PB_1 
-,1,0,0,0.5};
+,0.2,1,0,0.5};
 
 MotorConfig right_motor_config = 
 {PB_5,PA_8 
 ,PB_14,PB_13
-,1,0,0,0.5};
+,0.2,1,0,0.5};
 
 SensorConfig sensor_config = 
 {{
-{A0,-1.0f}
-,{A1,-0.6f}
-,{A2,-0.2f}
-,{A3,0.2f}
-,{A4,0.6f}
-,{A5,1.0f}
+{A5,-1.0f}
+,{A4,-0.6f}
+,{A3,-0.2f}
+,{A2,0.2f}
+,{A1,0.6f}
+,{A0,1.0f}
 }};
 
 int main()
@@ -144,7 +143,7 @@ int main()
                     }
 
                     if (sb.getLinePosition(&line_error)){
-                        
+                        is_line_break = false;
                         mdb.updateLineFollower(line_error,dt);
                         if (fsm.shouldPrint()){
                             char telemetry[telemetry_size];
@@ -165,19 +164,29 @@ int main()
                             line_break_start_time = current_time;
                         }
 
-                        if (current_time - line_break_start_time > 100000){
+                        if (current_time - line_break_start_time > (100000)){
                             fsm.nextState(STATE_STOP);
                         }
                     }
                 }
                 break;
                 case (STATE_ROTATE) :{
+                    static bool is_rotate;
                     if (fsm.isNotRepeatState()){
                         mdb.startRotate(fsm.ble_command.value);
-                        mdb.rotation_pid.reset();
+                        is_rotate = false;
                     }
-                    if(mdb.updateRotate(dt)){
-                        fsm.nextState(fsm.return_state);
+
+                    if (is_rotate == false){
+                        if (mdb.stop(dt)){
+                            is_rotate = true;
+                            mdb.resetEncoders();
+                        }
+
+                    }else{
+                        if(mdb.updateRotate(dt)){
+                            fsm.nextState(fsm.return_state);
+                        }
                     }
                 }
                 break;
@@ -185,7 +194,6 @@ int main()
                     sb.calibrate();
                     if (fsm.isNotRepeatState()){
                         mdb.startRotate(720);
-                        mdb.rotation_pid.reset();
                     }
                     if(mdb.updateRotate(dt)){
                         fsm.nextState(STATE_DISPLAY);
@@ -210,15 +218,15 @@ int main()
                         mdb.resetEncoders();
                     }
 
-                    mdb.SetPwmFromTargetSpeed(dt,0, target_speed);
+                    mdb.SetPwmFromTargetSpeed(dt,target_speed, target_speed);
                     if (fsm.shouldPrint()){
                         char telemetry[telemetry_size];
                         float speeds[2];
                         mdb.getSpeeds(speeds);
 
                         snprintf(telemetry, telemetry_size,
-                        ",%.2f,%.4f,%.4f\r\n",
-                        target_speed,speeds[1],mdb.right_motor.PWM_duty);        
+                        ",%.2f,%.4f,%.4f,%.4f,%.4f\r\n",
+                        target_speed,speeds[0],speeds[1],mdb.left_motor.PWM_duty,mdb.right_motor.PWM_duty);        
                         
                         pc.sendTelemetry(telemetry);
                     }
