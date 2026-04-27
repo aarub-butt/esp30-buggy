@@ -103,10 +103,13 @@ void MotorDriveBoard::SetPwmFromTargetSpeed(float dt, float lt, float rt){
     left_motor.speed_error = lt - left_motor.speed;
     right_motor.speed_error = rt- right_motor.speed;
 
-    static float kff = 0.65f;
+    //static float kff = 0.65f;
     
-    float left_pwm = 0.5f + (lt * kff) + left_motor.speed_pid.calculate(left_motor.speed_error, dt);
-    float right_pwm = 0.5f + (rt * kff) + right_motor.speed_pid.calculate(right_motor.speed_error, dt);
+    //float left_pwm = 0.5f + (lt * kff) + left_motor.speed_pid.calculate(left_motor.speed_error, dt);
+    //float right_pwm = 0.5f + (rt * kff) + right_motor.speed_pid.calculate(right_motor.speed_error, dt);
+
+    float left_pwm = 0.5f + left_motor.speed_pid.calculate(left_motor.speed_error, dt);
+    float right_pwm = 0.5f + right_motor.speed_pid.calculate(right_motor.speed_error, dt);
 
     if (left_pwm > 1.0f) left_pwm = 1.0f;
     if (left_pwm < 0.0f) left_pwm = 0.0f;
@@ -117,9 +120,26 @@ void MotorDriveBoard::SetPwmFromTargetSpeed(float dt, float lt, float rt){
 }
 
 void MotorDriveBoard::updateLineFollower(float error, float dt){
-    float steering_output = steering_pid.calculate(error, dt);
     
     float base_speed = max_speed ; // - (abs(error) * dynamic_speed_constant);
+
+    /*
+    static float min_base_speed = 0.1f;
+    if (base_speed < min_base_speed){
+        base_speed = min_base_speed;
+    }*/
+
+    static float abs_max_motor_speed = 0.7f;
+    float max_steering_output = abs_max_motor_speed - base_speed;
+
+    float steering_output = steering_pid.calculate(error, dt);
+
+    if (steering_output > max_steering_output){
+        steering_output = max_steering_output;
+    }else if (steering_output < -max_steering_output){
+        steering_output = -max_steering_output;
+    }
+
 
     float target_left_speed = base_speed + steering_output;
     float target_right_speed = base_speed - steering_output;

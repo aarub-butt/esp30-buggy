@@ -18,17 +18,17 @@ const int MotorDriveBoard::Motor::pulses_per_revolution = 256*4;
 float SensorBoard::LineSensor::alpha = 0.7;
 float MotorDriveBoard::alpha = 0.1;
 
-MotorDriveBoard::PID_controller MotorDriveBoard::steering_pid(1,0,0,1);
+MotorDriveBoard::PID_controller MotorDriveBoard::steering_pid(3,0,0,1);
 float MotorDriveBoard::dynamic_speed_constant = 1;
-float MotorDriveBoard::max_speed = 0.2f;
+float MotorDriveBoard::max_speed = 0.4f;
 
 MotorConfig left_motor_config = 
 {PC_4,PA_9 
 ,PB_15,PB_1 
 ,0.2,1,0,0.5};
-
+//pa8 to d2
 MotorConfig right_motor_config = 
-{PB_5,PA_8 
+{PB_5,D2
 ,PB_14,PB_13
 ,0.2,1,0,0.5};
 
@@ -116,8 +116,8 @@ int main()
                     ThisThread::sleep_for(500ms);
 
                     snprintf(telemetry, telemetry_size*3,
-                    "st:kp=%.2f,ki=%.2f,kd=%.2f\r\n",
-                    mdb.steering_pid.kp,mdb.steering_pid.ki,mdb.steering_pid.kd);
+                    "st:kp=%.2f,ki=%.2f,kd=%.2f,ms=%.2f\r\n",
+                    mdb.steering_pid.kp,mdb.steering_pid.ki,mdb.steering_pid.kd,mdb.max_speed);
 
                     pc.sendTelemetry(telemetry);
                     memset((char*) telemetry,0,telemetry_size*3);

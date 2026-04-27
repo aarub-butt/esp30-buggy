@@ -73,7 +73,6 @@ class MotorDriveBoard{
         DigitalOut enable; ///< Enable pin for buggy. Controling whether PWM output into @ref Motor
         static const float wheel_track_length; ///< Constant for distance between 2 wheels of buggy for @ref MotorDriveBoard::startRotate()
         static float alpha; ///< EMA filter constant for reading encoder values in @ref MotorDriveBoard::Motor::calcSpeed()
-        static float max_speed; ///< Speed limit of buggy @ref Motor
 
         /**
         * @class Motor
@@ -136,6 +135,8 @@ class MotorDriveBoard{
         int _target_pulse_count; ///< Varaible for target pulse count for rotation
 
     public:
+        static float max_speed; ///< Speed limit of buggy @ref Motor
+
         /**
         * @brief Update @ref MotorDriveBoard::Motor::Speed and @ref MotorDriveBoard::Motor::encoder values for @ref MotorDriveBoard::Motor
         * @param dt Time since previous call of function
