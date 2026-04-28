@@ -54,6 +54,7 @@ class MotorDriveBoard{
                 */
                 float calculate(float error, float dt);
 
+                void setOutputLimit(float output_limit);
 
                 /**
                 * @brief Constructor for @ref PID_controller class

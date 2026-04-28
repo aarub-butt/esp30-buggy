@@ -31,6 +31,10 @@ class SensorBoard{
 
                 float black; ///< Calibrated value for black
                 float white; ///< Calibrated value for white
+
+                float ambient;
+                float active;
+                float delta;
                 
                 /**
                 * @brief Read and filter sensor value.
@@ -39,36 +43,38 @@ class SensorBoard{
                 /**
                 * @brief Read normalised sensor value
                 */
-                float read();
+                float read(bool isDarlington);
 
                 /**
                 * @brief Constructor providing pin and weight to individual sensor
                 */
                 LineSensor(PinName pin, float w);
         };
+
         
     public:
-
-
+        bool isDarlington;
+        DigitalOut darlington[2];
         LineSensor sensors[6]; ///< Array of 6 Line sensors from sensor board
         
         /**
         * @brief Initailise 6 sensor sensor board with specified pins and weights
         */
-        SensorBoard(SensorConfig sensor_config); 
+        SensorBoard(SensorConfig sensor_config, PinName dar1,PinName dar2); 
 
         /**
         * @brief Returns @ref SensorBoard::LineSensor::readRaw() of all sensors on sensor board
         * @param[out] sensorValues Stores ref SensorBoard::LineSensor::readRaw() of all sensors
         */
         void readRawSensorValues(float* sensorValues);
-
+        
+        void readRawDarlingtonSensors();
 
         /**
         * @brief Returns @ref SensorBoard::LineSensor::read() of all sensors on sensor board
         * @param[out] sensorValues Stores ref SensorBoard::LineSensor::read() of all sensors
         */
-        void readSensorValues(float* sensorValues);
+        void readSensorValues(float* sensorValues, float* total_reading);
 
         
         /**

@@ -3,33 +3,70 @@
 // LineSensor Methods
 
 float SensorBoard::LineSensor::readRaw(){
+
     current_sensor_value = (alpha * input.read()) + ((1-alpha) * previous_sensor_value);
     previous_sensor_value = current_sensor_value;
     return current_sensor_value;
 }
 
-float SensorBoard::LineSensor::read(){
-    readRaw();
-    normalised = 1.0f- ((current_sensor_value-white)/(black-white));
+float SensorBoard::LineSensor::read(bool isDarlington){
+    if (!isDarlington){
+        readRaw();
+        normalised = 1.0f- ((current_sensor_value-white)/(black-white));
+    }else{
+        normalised = (delta-white)/(black-white);
+    }
     if (normalised > 1.0f) normalised = 1.0f;
     if (normalised < 0.0f) normalised = 0.0f;
+
     return normalised;
 }
 
 // SensorBoard Methods
 
-void SensorBoard::readSensorValues(float* sensorValues){
+void SensorBoard::readRawDarlingtonSensors(){
+    for (int i = 0; i < 2 ; i++){
+        
+        darlington[i].write(0);
+
+        wait_us(100);
+
+        for(int j = 0; j < 3; j++){
+            LineSensor* sensor = &sensors[(j*2)+(i)];
+            sensor->ambient = sensor->input.read();
+        }
+        
+        darlington[i].write(1);
+
+        wait_us(100);
+
+        for(int j = 0; j < 3; j++){
+            LineSensor* sensor = &sensors[(j*2)+(i)];
+            sensor->active = sensor->input.read();
+
+            float temp_delta = sensor->ambient-sensor->active;
+            sensor->delta = (0.7f * temp_delta) + ((1-0.7f) * sensor->delta);
+        }
+
+        darlington[i].write(0);
+    }
+}
+
+void SensorBoard::readSensorValues(float* sensorValues, float* total_reading){
+    if (isDarlington) readRawDarlingtonSensors();
     for  (int i = 0; i < 6; i++){
-        sensorValues[i] = sensors[i].read();
+        sensorValues[i] = sensors[i].read(isDarlington);
+        *total_reading += sensorValues[i];
     }
 }
 
 bool SensorBoard::getLinePosition(float* line_error){
     float weighted_sum = 0.0f;
     float total_reading = 0.0f;
+    if (isDarlington) readRawDarlingtonSensors();
 
     for (int i = 0; i<6 ; i++){
-        float sensor_value = sensors[i].read();
+        float sensor_value = sensors[i].read(isDarlington);
         total_reading += sensor_value;
         weighted_sum += sensor_value * sensors[i].weight;
     }
@@ -43,8 +80,17 @@ bool SensorBoard::getLinePosition(float* line_error){
 }
 
 void SensorBoard::calibrate(){
+
+    if (isDarlington)  readRawDarlingtonSensors();
+
     for (int i = 0; i < 6; i++){
-        float sensor_value = sensors[i].readRaw();
+        float sensor_value;
+        if (isDarlington){
+            sensor_value = sensors[i].delta;
+        }else{
+            sensor_value = sensors[i].readRaw();
+        }
+
         float* black = &sensors[i].black;
         float* white = &sensors[i].white;
         if (sensor_value > *black) *black = sensor_value;
@@ -61,7 +107,7 @@ SensorBoard::LineSensor::LineSensor(PinName pin, float w) : input(pin), weight(w
     white = 0.5f;
 }
 
-SensorBoard::SensorBoard(SensorConfig sensor_config) : 
+SensorBoard::SensorBoard(SensorConfig sensor_config, PinName dar1, PinName dar2) : 
 sensors{
     {sensor_config.sensors[0].pin , sensor_config.sensors[0].weight},
     {sensor_config.sensors[1].pin , sensor_config.sensors[1].weight},
@@ -69,4 +115,12 @@ sensors{
     {sensor_config.sensors[3].pin , sensor_config.sensors[3].weight},    
     {sensor_config.sensors[4].pin , sensor_config.sensors[4].weight},
     {sensor_config.sensors[5].pin , sensor_config.sensors[5].weight}
-}{}
+},
+darlington{
+    dar1,dar2
+}
+{
+    darlington[0].write(0);
+    darlington[1].write(1);
+    isDarlington = false;
+}

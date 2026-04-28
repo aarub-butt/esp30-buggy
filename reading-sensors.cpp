@@ -9,15 +9,17 @@ void ReadingSensorBoard(SensorBoard* sensor_board, ble* pc, FSM *fsm){
 
     if (fsm->shouldPrint()){
         float line_sensor_outputs[6];
-        sensor_board->readSensorValues(line_sensor_outputs);
+        float total_reading = 0;
+        sensor_board->readSensorValues(line_sensor_outputs, &total_reading);
         char line_sensor_outputs_string[telemetry_size];
  
         snprintf(line_sensor_outputs_string,telemetry_size,
-        "s:%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\r\n"
+        "s:%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\r\n"
         ,line_sensor_outputs[0],line_sensor_outputs[1],line_sensor_outputs[2],
-        line_sensor_outputs[3],line_sensor_outputs[4],line_sensor_outputs[5]);
+        line_sensor_outputs[3],line_sensor_outputs[4],line_sensor_outputs[5],
+        total_reading);
 
-        pc->sendTelemetry(line_sensor_outputs_string, fsm->global_timer.elapsed_time().count(), &fsm->cycle_timestamp);
+        pc->sendTelemetry(line_sensor_outputs_string);
     }
 
 }

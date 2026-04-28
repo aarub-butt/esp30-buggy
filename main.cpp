@@ -18,9 +18,9 @@ const int MotorDriveBoard::Motor::pulses_per_revolution = 256*4;
 float SensorBoard::LineSensor::alpha = 0.7;
 float MotorDriveBoard::alpha = 0.1;
 
-MotorDriveBoard::PID_controller MotorDriveBoard::steering_pid(3,0,0,1);
+MotorDriveBoard::PID_controller MotorDriveBoard::steering_pid(3,0,1,1);
 float MotorDriveBoard::dynamic_speed_constant = 1;
-float MotorDriveBoard::max_speed = 0.4f;
+float MotorDriveBoard::max_speed = 0.6f;
 
 MotorConfig left_motor_config = 
 {PC_4,PA_9 
@@ -48,7 +48,7 @@ int main()
     ble pc(PA_11,PA_12,9600);
     MotorDriveBoard mdb(left_motor_config,right_motor_config, PB_4,20000);
     FSM fsm;
-    SensorBoard sb(sensor_config);
+    SensorBoard sb(sensor_config,PC_13,PB_7);
 
     int heartbeat_count = 0;
     char heartbeat[] = "heartbeat\r\n";

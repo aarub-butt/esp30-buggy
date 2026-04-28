@@ -35,6 +35,10 @@ void MotorDriveBoard::PID_controller::setPid(float p, float i , float d){
     kd = d;
 }
 
+void MotorDriveBoard::PID_controller::setOutputLimit(float output_limit){
+    this->output_limit = output_limit;
+}
+
 // Motor Methods
 void MotorDriveBoard::Motor::resetEncoder(){
     distance_travelled = 0;
@@ -104,17 +108,11 @@ void MotorDriveBoard::SetPwmFromTargetSpeed(float dt, float lt, float rt){
     right_motor.speed_error = rt- right_motor.speed;
 
     //static float kff = 0.65f;
-    
     //float left_pwm = 0.5f + (lt * kff) + left_motor.speed_pid.calculate(left_motor.speed_error, dt);
     //float right_pwm = 0.5f + (rt * kff) + right_motor.speed_pid.calculate(right_motor.speed_error, dt);
 
     float left_pwm = 0.5f + left_motor.speed_pid.calculate(left_motor.speed_error, dt);
     float right_pwm = 0.5f + right_motor.speed_pid.calculate(right_motor.speed_error, dt);
-
-    if (left_pwm > 1.0f) left_pwm = 1.0f;
-    if (left_pwm < 0.0f) left_pwm = 0.0f;
-    if (right_pwm > 1.0f) right_pwm = 1.0f;
-    if (right_pwm < 0.0f) right_pwm = 0.0f;
 
     setPWM(left_pwm, right_pwm);
 }
@@ -128,21 +126,35 @@ void MotorDriveBoard::updateLineFollower(float error, float dt){
     if (base_speed < min_base_speed){
         base_speed = min_base_speed;
     }*/
-
-    static float abs_max_motor_speed = 0.7f;
-    float max_steering_output = abs_max_motor_speed - base_speed;
-
+    //static float abs_max_motor_speed = 0.7f;
+    
+    float max_steering_output = base_speed-0.1f;
+    steering_pid.setOutputLimit(max_steering_output);
     float steering_output = steering_pid.calculate(error, dt);
-
-    if (steering_output > max_steering_output){
-        steering_output = max_steering_output;
-    }else if (steering_output < -max_steering_output){
-        steering_output = -max_steering_output;
-    }
-
 
     float target_left_speed = base_speed + steering_output;
     float target_right_speed = base_speed - steering_output;
+
+    float correction_factor = 1.0f;
+    //uphill
+    if (target_left_speed > left_motor.speed && left_motor.PWM_duty > 0.9f && target_left_speed > 0.01f){
+        correction_factor = left_motor.speed/target_left_speed;
+    }
+    if (target_right_speed > right_motor.speed && right_motor.PWM_duty > 0.9f && target_right_speed > 0.01f){
+        float temp = right_motor.speed/target_right_speed;
+        if (temp < correction_factor) correction_factor = temp;
+    }
+    //downhill
+    if (target_left_speed < left_motor.speed && left_motor.PWM_duty < 0.1f && target_left_speed > 0.01f){
+        correction_factor = left_motor.speed/ target_left_speed;
+    }
+    if (target_right_speed < right_motor.speed && right_motor.PWM_duty < 0.1f && target_right_speed > 0.01f){
+        float temp = right_motor.speed/target_right_speed;
+        if (temp > correction_factor) correction_factor = temp;
+    }
+
+    target_left_speed *= correction_factor;
+    target_right_speed *= correction_factor;
 
     SetPwmFromTargetSpeed(dt, target_left_speed, target_right_speed);
 }
@@ -153,7 +165,7 @@ bool MotorDriveBoard::stop(float dt){
     static float left_braking_target_speed = 0.0f;
     static float right_braking_target_speed = 0.0f;
     static bool is_braking = false;
-    static float decelerate_rate = 0.3f;
+    static float decelerate_rate = 1.0f;
     
     if (is_braking == false){
         left_braking_target_speed = left_motor.speed;
