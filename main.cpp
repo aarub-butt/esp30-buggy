@@ -50,6 +50,11 @@ int main()
     FSM fsm;
     SensorBoard sb(sensor_config,PC_13,PB_7);
 
+    DigitalOut direction_1(PB_9);
+    DigitalOut direction_2(PB_8);
+    direction_1.write(0);
+    direction_2.write(0);
+
     int heartbeat_count = 0;
     char heartbeat[] = "heartbeat\r\n";
 
