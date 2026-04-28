@@ -79,6 +79,10 @@ void ble::ParseCommand(FSM* fsm, FSM::BLE_COMMAND *command_ptr, MotorDriveBoard*
         mdb->max_speed = a;
     }
 
+    else if (sscanf(command_ptr->command, "dsc=%f", &a) == 1) {
+        mdb->dynamic_speed_constant = a;
+    }
+
 }
 
 bool ble::getCommand(FSM* fsm, FSM::BLE_COMMAND *command_ptr, MotorDriveBoard* mdb){

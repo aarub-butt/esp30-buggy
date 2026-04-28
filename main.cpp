@@ -19,8 +19,8 @@ float SensorBoard::LineSensor::alpha = 0.7;
 float MotorDriveBoard::alpha = 0.1;
 
 MotorDriveBoard::PID_controller MotorDriveBoard::steering_pid(3,0,1,1);
-float MotorDriveBoard::dynamic_speed_constant = 1;
-float MotorDriveBoard::max_speed = 0.6f;
+float MotorDriveBoard::dynamic_speed_constant = 0.0f;
+float MotorDriveBoard::max_speed = 0.4f;
 
 MotorConfig left_motor_config = 
 {PC_4,PA_9 
@@ -121,8 +121,8 @@ int main()
                     ThisThread::sleep_for(500ms);
 
                     snprintf(telemetry, telemetry_size*3,
-                    "st:kp=%.2f,ki=%.2f,kd=%.2f,ms=%.2f\r\n",
-                    mdb.steering_pid.kp,mdb.steering_pid.ki,mdb.steering_pid.kd,mdb.max_speed);
+                    "st:kp=%.2f,ki=%.2f,kd=%.2f,ms=%.2f,dsc=%.2f\r\n",
+                    mdb.steering_pid.kp,mdb.steering_pid.ki,mdb.steering_pid.kd,mdb.max_speed,mdb.dynamic_speed_constant);
 
                     pc.sendTelemetry(telemetry);
                     memset((char*) telemetry,0,telemetry_size*3);
@@ -156,7 +156,13 @@ int main()
                     }
 
                     if (sb.getLinePosition(&line_error)){
-                        is_line_break = false;
+                        
+                        // bump catches line again
+                        if (is_line_break == true) {
+                            mdb.steering_pid.reset();
+                            is_line_break = false;
+                        }
+                        
                         mdb.updateLineFollower(line_error,dt);
                         if (fsm.shouldPrint()){
                             char telemetry[telemetry_size];
@@ -178,7 +184,8 @@ int main()
                         }
 
                         if ( (current_time - line_break_start_time) > (100000)){
-                            fsm.nextState(STATE_STOP);
+                            // halt if lose line
+                            mdb.stop(dt);
                         }
                     }
                 }

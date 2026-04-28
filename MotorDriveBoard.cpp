@@ -51,7 +51,8 @@ void MotorDriveBoard::Motor::calcDistanceTravelled(){
 }
 void MotorDriveBoard::Motor::calcSpeed(float time_elapsed){
     calcDistanceTravelled();
-    speed = ((distance_travelled /  time_elapsed )*alpha) + (previous_speed *( 1-alpha));
+    //speed = ((distance_travelled /  time_elapsed )*alpha) + (previous_speed *( 1-alpha));
+    speed = distance_travelled /  time_elapsed;
     previous_speed = speed;
 }
 
@@ -119,16 +120,15 @@ void MotorDriveBoard::SetPwmFromTargetSpeed(float dt, float lt, float rt){
 
 void MotorDriveBoard::updateLineFollower(float error, float dt){
     
-    float base_speed = max_speed ; // - (abs(error) * dynamic_speed_constant);
+    float base_speed = max_speed - (abs(error) * dynamic_speed_constant);
 
-    /*
-    static float min_base_speed = 0.1f;
+    static float min_base_speed = 0.15f;
     if (base_speed < min_base_speed){
         base_speed = min_base_speed;
-    }*/
-    //static float abs_max_motor_speed = 0.7f;
-    
-    float max_steering_output = base_speed-0.1f;
+    }
+
+    static float abs_max_motor_speed = 1.0f;
+    float max_steering_output = abs_max_motor_speed - base_speed;
     steering_pid.setOutputLimit(max_steering_output);
     float steering_output = steering_pid.calculate(error, dt);
 
