@@ -103,8 +103,8 @@ SensorBoard::LineSensor::LineSensor(PinName pin, float w) : input(pin), weight(w
     current_sensor_value = 0.5f;
     previous_sensor_value = 0.5f;
 
-    black = 0.5f;
-    white = 0.5f;
+    black = 0.0f;
+    white = 1.0f;
 }
 
 SensorBoard::SensorBoard(SensorConfig sensor_config, PinName dar1, PinName dar2) : 

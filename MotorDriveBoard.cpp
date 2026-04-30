@@ -108,7 +108,7 @@ void MotorDriveBoard::SetPwmFromTargetSpeed(float dt, float lt, float rt){
     left_motor.speed_error = lt - left_motor.speed;
     right_motor.speed_error = rt- right_motor.speed;
 
-    //static float kff = 0.65f;
+    //static float kff = 0.52f; //0.65 is exact but 0.8*0.65 for 80%
     //float left_pwm = 0.5f + (lt * kff) + left_motor.speed_pid.calculate(left_motor.speed_error, dt);
     //float right_pwm = 0.5f + (rt * kff) + right_motor.speed_pid.calculate(right_motor.speed_error, dt);
 
@@ -122,7 +122,7 @@ void MotorDriveBoard::updateLineFollower(float error, float dt){
     
     float base_speed = max_speed - (abs(error) * dynamic_speed_constant);
 
-    static float min_base_speed = 0.15f;
+    static float min_base_speed = 0.10f;
     if (base_speed < min_base_speed){
         base_speed = min_base_speed;
     }
@@ -135,22 +135,33 @@ void MotorDriveBoard::updateLineFollower(float error, float dt){
     float target_left_speed = base_speed + steering_output;
     float target_right_speed = base_speed - steering_output;
 
+
+    
     float correction_factor = 1.0f;
     //uphill
     if (target_left_speed > left_motor.speed && left_motor.PWM_duty > 0.9f && target_left_speed > 0.01f){
         correction_factor = left_motor.speed/target_left_speed;
     }
     if (target_right_speed > right_motor.speed && right_motor.PWM_duty > 0.9f && target_right_speed > 0.01f){
-        float temp = right_motor.speed/target_right_speed;
-        if (temp < correction_factor) correction_factor = temp;
+        correction_factor = fminf(correction_factor, right_motor.speed/target_right_speed);
     }
+    //reverse pivot can't reach e.g. 0.8f, -0.4f , lm,rm
+    if (target_left_speed < -0.01f && left_motor.PWM_duty < 0.1f && target_left_speed < left_motor.speed) {
+        correction_factor = fminf(correction_factor, left_motor.speed / target_left_speed);
+    }
+    if (target_right_speed < -0.01f && right_motor.PWM_duty < 0.1f && target_right_speed < right_motor.speed) {
+        correction_factor = fminf(correction_factor, right_motor.speed / target_right_speed);
+    }
+    
     //downhill
-    if (target_left_speed < left_motor.speed && left_motor.PWM_duty < 0.1f && target_left_speed > 0.01f){
-        correction_factor = left_motor.speed/ target_left_speed;
-    }
-    if (target_right_speed < right_motor.speed && right_motor.PWM_duty < 0.1f && target_right_speed > 0.01f){
-        float temp = right_motor.speed/target_right_speed;
-        if (temp > correction_factor) correction_factor = temp;
+    if (correction_factor >= 1.0f){
+        if (target_left_speed < left_motor.speed && left_motor.PWM_duty < 0.1f && target_left_speed > 0.01f){
+            correction_factor = left_motor.speed/ target_left_speed;
+        }
+        if (target_right_speed < right_motor.speed && right_motor.PWM_duty < 0.1f && target_right_speed > 0.01f){
+            correction_factor = fmaxf(correction_factor,right_motor.speed/target_right_speed);
+        }
+        correction_factor = fminf(correction_factor,1.25f);
     }
 
     target_left_speed *= correction_factor;

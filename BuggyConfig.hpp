@@ -54,7 +54,8 @@ enum ProgramState{
     STATE_DISPLAY,
     STATE_CALIBRATE,
     STATE_LINE_FOLLOWING,
-    STATE_SPEED
+    STATE_SPEED,
+    STATE_TEST_SPEED
 };
 
 extern SensorConfig sensor_pins; ///< Sensor Pins preconfigured 
@@ -81,7 +82,7 @@ class FSM{
     private:
         ProgramState programState; ///< Current State
         ProgramState previousProgramState; ///< Previous state to detect whether state has changed
-        static constexpr auto buggy_period = std::chrono::microseconds(4500); ///< Cycle period of buggy at 4.5ms
+        static constexpr auto buggy_period = std::chrono::microseconds(6500); ///< Cycle period of buggy at 4.5ms
 
         Ticker buggy_rate; ///< Hardware interrupt to trigger cycle using @ref InitiateCycle()
         void InitiateCycle(); ///< ISR to set @ref var_isNextCycle

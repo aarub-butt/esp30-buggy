@@ -17,6 +17,10 @@ void ble::ParseCommand(FSM* fsm, FSM::BLE_COMMAND *command_ptr, MotorDriveBoard*
         fsm->nextState(STATE_NONE);
     }
 
+    if (strcmp(command_ptr->command,"ts") == 0){
+        fsm->nextState(STATE_TEST_SPEED);
+    }
+
     if (strcmp(command_ptr->command,"stop") == 0){
         fsm->nextState(STATE_STOP);
     }

@@ -18,19 +18,19 @@ const int MotorDriveBoard::Motor::pulses_per_revolution = 256*4;
 float SensorBoard::LineSensor::alpha = 0.7;
 float MotorDriveBoard::alpha = 0.1;
 
-MotorDriveBoard::PID_controller MotorDriveBoard::steering_pid(3,0,1,1);
+MotorDriveBoard::PID_controller MotorDriveBoard::steering_pid(1,0,0,1);
 float MotorDriveBoard::dynamic_speed_constant = 0.0f;
 float MotorDriveBoard::max_speed = 0.4f;
 
 MotorConfig left_motor_config = 
 {PC_4,PA_9 
 ,PB_15,PB_1 
-,0.2,1,0,0.5};
+,0.4,1,0,0.5};
 //pa8 to d2
 MotorConfig right_motor_config = 
 {PB_5,D2
 ,PB_14,PB_13
-,0.2,1,0,0.5};
+,0.4,1,0,0.5};
 
 SensorConfig sensor_config = 
 {{
@@ -253,6 +253,68 @@ int main()
                 }
                 break;
 
+                case (STATE_TEST_SPEED):{
+                    static int speed_state;
+                    static long long start_time;
+                    static float target_speed;
+                    if (fsm.isNotRepeatState()){
+                        char telemetry[] = "test speed algo";
+                        pc.sendTelemetry(telemetry);
+                        mdb.resetEncoders();
+                        speed_state = 0;
+                        start_time = fsm.global_timer.elapsed_time().count();
+                        target_speed = 0.2f;
+                    }
+                    if (fsm.shouldPrint()){
+                        char telemetry[telemetry_size];
+                        float speeds[2];
+                        mdb.getSpeeds(speeds);
+
+                        snprintf(telemetry, telemetry_size,
+                        ",%.2f,%.4f,%.4f,%.4f,%.4f\r\n",
+                        target_speed,speeds[0],speeds[1],mdb.left_motor.PWM_duty,mdb.right_motor.PWM_duty);        
+                        
+                        pc.sendTelemetry(telemetry);
+                    }
+                    switch(speed_state){
+                        case(0):{
+                            mdb.SetPwmFromTargetSpeed(dt, target_speed, target_speed);
+                            if ((fsm.global_timer.elapsed_time().count() -start_time ) > 2000000){
+                                speed_state++;
+                                target_speed = 0.8f;
+                                start_time = fsm.global_timer.elapsed_time().count();
+                            } 
+                        }
+                        break;
+
+                        case(1):{
+                            mdb.SetPwmFromTargetSpeed(dt, target_speed, target_speed);
+                            if ((fsm.global_timer.elapsed_time().count() -start_time ) > 2000000){
+                                speed_state++;
+                                target_speed = 0.2f;
+                                start_time = fsm.global_timer.elapsed_time().count();
+                            } 
+                        }
+                        break;
+
+                        case (2) : {
+                            mdb.SetPwmFromTargetSpeed(dt, target_speed, target_speed);
+                            if ((fsm.global_timer.elapsed_time().count() -start_time ) > 2000000){
+                                speed_state++;
+                                target_speed = 0.0f;
+                                start_time = fsm.global_timer.elapsed_time().count();
+                            } 
+                        }
+                        break;
+
+                        case(3):{
+                            fsm.nextState(STATE_STOP);
+                        }
+                        break;
+
+                    }
+                }
+                break;
                 default:
                     fsm.nextState(STATE_INVALID);
                     break;       
